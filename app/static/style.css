@@ -1,34 +1,38 @@
-/* NBA Win Probability — Notion / ChatGPT / tech-style UI */
+/* NBA Win Probability — Dark Notion / ChatGPT style */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg: #fafafa;
-  --bg-elevated: #ffffff;
-  --surface: #ffffff;
-  --border: #e5e7eb;
-  --border-light: #f3f4f6;
-  --text: #111827;
-  --text-secondary: #6b7280;
-  --muted: #9ca3af;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --away: #0ea5e9;
-  --away-light: #e0f2fe;
-  --home: #10b981;
-  --home-light: #d1fae5;
-  --out: #ef4444;
-  --out-light: #fee2e2;
-  --questionable: #f59e0b;
-  --questionable-light: #fef3c7;
-  --playing: #10b981;
-  --playing-light: #d1fae5;
+  --bg: #0f0f0f;
+  --bg-elevated: #171717;
+  --bg-card: #1a1a1a;
+  --surface: #1e1e1e;
+  --border: #2d2d2d;
+  --border-light: #262626;
+  --text: #fafafa;
+  --text-secondary: #a1a1aa;
+  --muted: #71717a;
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-muted: rgba(59, 130, 246, 0.15);
+  --away: #38bdf8;
+  --away-muted: rgba(56, 189, 248, 0.2);
+  --home: #34d399;
+  --home-muted: rgba(52, 211, 153, 0.2);
+  --out: #f87171;
+  --out-muted: rgba(248, 113, 113, 0.2);
+  --questionable: #fbbf24;
+  --questionable-muted: rgba(251, 191, 36, 0.2);
+  --playing: #34d399;
+  --playing-muted: rgba(52, 211, 153, 0.2);
+  --doubtful: #fbbf24;
+  --doubtful-muted: rgba(251, 191, 36, 0.2);
   --radius: 12px;
   --radius-sm: 8px;
+  --radius-lg: 16px;
   --radius-pill: 9999px;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -43,19 +47,21 @@ body {
   min-height: 100vh;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
 }
 
+/* ---------- Header ---------- */
 .header {
   background: var(--bg-elevated);
   padding: 1.5rem 1.5rem 1.75rem;
   border-bottom: 1px solid var(--border);
   text-align: center;
-  box-shadow: var(--shadow);
 }
 
 .header h1 {
   margin: 0 0 0.35rem;
-  font-size: 1.625rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.02em;
@@ -82,26 +88,101 @@ body {
 }
 
 .back:hover {
-  background: var(--primary-light);
+  background: var(--primary-muted);
   color: var(--primary-hover);
   text-decoration: none;
 }
 
+/* ---------- Main content ---------- */
 .main {
-  max-width: 1600px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
+  flex: 1;
+  width: 100%;
 }
 
-.error {
-  color: var(--out);
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
-  background: var(--out-light);
-  border-radius: var(--radius-sm);
+/* ---------- Home page: centered hero ---------- */
+.page-home .main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 180px);
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.page-home .hero {
+  max-width: 520px;
+  margin: 0 auto 2.5rem;
+}
+
+.page-home .hero h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin: 0 0 0.75rem;
+  line-height: 1.25;
+}
+
+.page-home .hero p {
+  font-size: 1.0625rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.page-home .date-form-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 2.25rem;
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.page-home .date-form {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  flex-direction: column;
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.page-home .date-form label {
+  display: block;
+  text-align: center;
   font-size: 0.9375rem;
+  color: var(--text-secondary);
 }
 
+.page-home .date-form input[type="date"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.page-home .date-form button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.page-home .error {
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ---------- Date form (results page or inline) ---------- */
 .date-form {
   display: flex;
   flex-wrap: wrap;
@@ -117,7 +198,7 @@ body {
 
 .date-form label {
   font-weight: 500;
-  color: var(--text);
+  color: var(--text-secondary);
   font-size: 0.9375rem;
 }
 
@@ -126,7 +207,7 @@ body {
   font-size: 0.9375rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--bg-elevated);
+  background: var(--bg-card);
   color: var(--text);
   font-family: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -135,7 +216,7 @@ body {
 .date-form input[type="date"]:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 3px var(--primary-muted);
 }
 
 .date-form button {
@@ -159,16 +240,29 @@ body {
   transform: scale(0.98);
 }
 
+/* ---------- Error ---------- */
+.error {
+  color: var(--out);
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--out-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+}
+
+/* ---------- No games ---------- */
 .no-games {
   color: var(--text-secondary);
   font-size: 1rem;
-  padding: 2rem;
+  padding: 2.5rem;
   text-align: center;
   background: var(--surface);
   border-radius: var(--radius);
   border: 1px dashed var(--border);
 }
 
+/* ---------- Games list ---------- */
 .games {
   display: flex;
   flex-direction: column;
@@ -178,7 +272,7 @@ body {
 .game-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 2rem 2.25rem;
   box-shadow: var(--shadow);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
@@ -211,16 +305,18 @@ body {
 
 .matchup-header .team.away {
   color: var(--away);
-  padding: 0.25rem 0.5rem;
-  background: var(--away-light);
+  padding: 0.35rem 0.65rem;
+  background: var(--away-muted);
   border-radius: var(--radius-sm);
+  border: 1px solid rgba(56, 189, 248, 0.3);
 }
 
 .matchup-header .team.home {
   color: var(--home);
-  padding: 0.25rem 0.5rem;
-  background: var(--home-light);
+  padding: 0.35rem 0.65rem;
+  background: var(--home-muted);
   border-radius: var(--radius-sm);
+  border: 1px solid rgba(52, 211, 153, 0.3);
 }
 
 .matchup-header .at {
@@ -234,7 +330,7 @@ body {
   border-radius: var(--radius-pill);
   overflow: hidden;
   margin-bottom: 0.5rem;
-  background: var(--border-light);
+  background: var(--bg-card);
 }
 
 .win-pct-bar .bar.away {
@@ -243,7 +339,7 @@ body {
 }
 
 .win-pct-bar .bar.home {
-  background: linear-gradient(90deg, #10b981, #34d399);
+  background: linear-gradient(90deg, #059669, #34d399);
   transition: flex 0.3s ease;
 }
 
@@ -261,8 +357,9 @@ body {
   margin: 0 0 1.25rem;
   font-size: 0.9375rem;
   color: var(--text);
-  padding: 0.5rem 0.75rem;
-  background: var(--primary-light);
+  padding: 0.6rem 1rem;
+  background: var(--primary-muted);
+  border: 1px solid rgba(59, 130, 246, 0.35);
   border-radius: var(--radius-sm);
   display: inline-block;
   font-weight: 500;
@@ -279,7 +376,7 @@ body {
 
 .team-ratings {
   padding: 0.75rem 1rem;
-  background: var(--bg);
+  background: var(--bg-card);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-light);
   text-align: center;
@@ -337,6 +434,7 @@ body {
   overflow: hidden;
   border: 1px solid var(--border);
   margin: 0 auto;
+  background: var(--bg-card);
 }
 
 .roster th,
@@ -347,7 +445,7 @@ body {
 }
 
 .roster th {
-  background: var(--bg);
+  background: var(--bg-elevated);
   color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.75rem;
@@ -371,7 +469,7 @@ body {
 }
 
 .roster tbody tr:hover {
-  background: var(--bg);
+  background: var(--bg-elevated);
 }
 
 .roster tbody tr:last-child td {
@@ -379,7 +477,7 @@ body {
 }
 
 .roster tr.status-out {
-  opacity: 0.65;
+  opacity: 0.6;
 }
 
 .roster tr.status-out:hover {
@@ -390,6 +488,7 @@ body {
   opacity: 0.9;
 }
 
+/* ---------- Badges ---------- */
 .badge {
   display: inline-block;
   padding: 0.2rem 0.5rem;
@@ -401,23 +500,27 @@ body {
 }
 
 .badge.playing {
-  background: var(--playing-light);
-  color: #047857;
+  background: var(--playing-muted);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
 }
 
 .badge.questionable {
-  background: var(--questionable-light);
-  color: #b45309;
+  background: var(--questionable-muted);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
 }
 
 .badge.out {
-  background: var(--out-light);
-  color: #b91c1c;
+  background: var(--out-muted);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.4);
 }
 
 .badge.doubtful {
-  background: #fef3c7;
-  color: #b45309;
+  background: var(--doubtful-muted);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
 }
 
 .injury-label {
@@ -436,6 +539,7 @@ body {
   line-height: 1.7;
 }
 
+/* ---------- Footer ---------- */
 .footer {
   padding: 1.25rem 1.5rem;
   border-top: 1px solid var(--border);
@@ -443,5 +547,5 @@ body {
   color: var(--muted);
   font-size: 0.8125rem;
   background: var(--bg-elevated);
-  margin-top: 2rem;
+  margin-top: auto;
 }

@@ -43,7 +43,10 @@ python main.py --json       # machine-readable JSON
 | Recent form | TeamGameLog (last N games) | Win rate in last 10 games |
 | Home/away | Schedule | Home-court advantage (~2.5 pts) |
 | **Rest / back-to-back** | TeamGameLog last game date | B2B (0 rest): −2 pts; 2+ days rest: +0.5 pts |
-| **Injuries** | `nbainjuries` (optional) | Out = full penalty, Questionable = partial. Requires Java 8+; if not installed, injuries are skipped |
+| **Injuries** | `nbainjuries` (optional) | Out/Questionable with **player names**; matched to roster so we know who is missing |
+| **Team ORtg/DRtg** | TeamEstimatedMetrics | E_OFF_RATING, E_DEF_RATING per team |
+| **Player stats** | CommonTeamRoster + LeagueDashPlayerStats (PerGame) | MIN, PTS, AST, REB, STL, BLK; injured players excluded from "available value" |
+| **Stat importance** | `src/analysis/stat_importance.py` | Correlation of team PTS/AST/REB/STL/BLK with W_PCT → weights for player contribution |
 
 ## Improving later
 
@@ -57,8 +60,9 @@ python main.py --json       # machine-readable JSON
 config.py           # season, UPCOMING_DAYS, RECENT_GAMES_N, REFRESH_MINUTES
 main.py             # CLI: fetch → predict → print/JSON
 src/
-  data/fetchers.py  # get_upcoming_games, get_team_season_stats, get_recent_form, get_injuries_stub
-  model.py          # predict_game(team_stats, recent_form, injuries)
+  data/fetchers.py  # games, team stats, roster, player stats, ORtg/DRtg, injuries, rest
+  analysis/stat_importance.py  # correlation-based weights for PTS/AST/REB/STL/BLK
+  model.py          # predict_game(..., ortg_drtg, available_value_home/away)
 requirements.txt
 .venv/
 ```

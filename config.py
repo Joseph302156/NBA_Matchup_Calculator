@@ -27,3 +27,8 @@ REST_EXTRA_BONUS_PTS = 0.5      # pts to add when team has 2+ days rest
 INJURY_OUT_WEIGHT = 1.0         # full penalty for "Out"
 INJURY_QUESTIONABLE_WEIGHT = 0.4  # partial for "Questionable"
 INJURY_WEIGHT = 0.35            # multiplier: penalty = INJURY_WEIGHT * (out*1 + questionable*0.4)
+
+# Team offensive/defensive rating (from TeamEstimatedMetrics)
+ORTG_DRTG_WEIGHT = 0.015       # (ortg - drtg) scale: ~100 pts typical; 0.015 * 5 ≈ 0.075 strength
+# Available player value (weighted sum of non-injured player stats)
+PLAYER_VALUE_WEIGHT = 0.002    # scale so ~200 team value => 0.4 strength

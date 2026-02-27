@@ -16,7 +16,10 @@ from src.data.fetchers import (
     get_recent_form,
     get_injuries,
     get_rest_days,
+    get_team_ortg_drtg,
+    get_available_player_value,
 )
+from src.analysis.stat_importance import get_player_stat_weights
 from src.model import predict_game
 
 
@@ -45,6 +48,14 @@ def main():
     injuries = get_injuries()
     last_game_dates = {}
 
+    # Caches for player stats and team ORtg/DRtg (shared across games)
+    data_cache = {}
+    ortg_drtg = get_team_ortg_drtg(data_cache)
+    try:
+        player_weights = get_player_stat_weights()
+    except Exception:
+        player_weights = {"PTS": 1.0, "AST": 0.5, "REB": 0.4, "STL": 0.6, "BLK": 0.6}
+
     results = []
     for g in games:
         home_days = get_rest_days(
@@ -54,8 +65,23 @@ def main():
             g["away_team_id"], g["game_date_est"], last_game_dates
         )
         rest = {"home_days": home_days, "away_days": away_days}
+
+        avail_home, _ = get_available_player_value(
+            g["home_team_id"], injuries.get(g["home_team_id"], []), data_cache, player_weights
+        )
+        avail_away, _ = get_available_player_value(
+            g["away_team_id"], injuries.get(g["away_team_id"], []), data_cache, player_weights
+        )
+
         win_home, win_away, pick_home = predict_game(
-            g, team_stats, recent_form=recent_form, injuries=injuries, rest=rest
+            g,
+            team_stats,
+            recent_form=recent_form,
+            injuries=injuries,
+            rest=rest,
+            ortg_drtg=ortg_drtg,
+            available_value_home=avail_home,
+            available_value_away=avail_away,
         )
         pick_team = g["home_team_name"] if pick_home else g["away_team_name"]
         pick_pct = win_home if pick_home else win_away

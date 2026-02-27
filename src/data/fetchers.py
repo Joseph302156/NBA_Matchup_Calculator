@@ -7,10 +7,14 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from nba_api.stats.endpoints import (
+    CommonTeamRoster,
+    LeagueDashPlayerStats,
     LeagueDashTeamStats,
     ScheduleLeagueV2,
     TeamGameLog,
+    TeamEstimatedMetrics,
 )
+from nba_api.stats.library.parameters import PerModeDetailed
 from nba_api.stats.static import teams as static_teams
 from nba_api.live.nba.endpoints import scoreboard
 
@@ -107,6 +111,142 @@ def get_team_season_stats():
     return by_id
 
 
+def get_team_roster(team_id):
+    """Current roster: list of {player_id, player_name, position}."""
+    season = _season()
+    e = CommonTeamRoster(team_id=str(team_id), season=season)
+    time.sleep(REQUEST_DELAY)
+    dfs = e.get_data_frames()
+    roster_df = dfs[0] if dfs else None
+    if roster_df is None or roster_df.empty:
+        return []
+    out = []
+    for _, row in roster_df.iterrows():
+        out.append({
+            "player_id": int(row["PLAYER_ID"]),
+            "player_name": (row.get("PLAYER") or row.get("PLAYER_NAME") or "").strip(),
+            "position": (row.get("POSITION") or "").strip(),
+        })
+    return out
+
+
+def get_league_player_stats_per_game(cache=None):
+    """
+    All players season per-game: MIN, PTS, AST, REB, STL, BLK. Returns dict player_id -> stats.
+    cache: optional dict to store result and skip refetch.
+    """
+    if cache is not None and "player_stats" in cache:
+        return cache["player_stats"]
+    season = _season()
+    e = LeagueDashPlayerStats(season=season, per_mode_detailed=PerModeDetailed.per_game)
+    time.sleep(REQUEST_DELAY)
+    df = e.get_data_frames()[0]
+    if df is None or df.empty:
+        result = {}
+    else:
+        result = {}
+        for _, row in df.iterrows():
+            pid = int(row["PLAYER_ID"])
+            gp = int(row.get("GP", 1)) or 1
+            result[pid] = {
+                "MIN": float(row.get("MIN", 0) or 0),
+                "PTS": float(row.get("PTS", 0) or 0),
+                "AST": float(row.get("AST", 0) or 0),
+                "REB": float(row.get("REB", 0) or 0),
+                "STL": float(row.get("STL", 0) or 0),
+                "BLK": float(row.get("BLK", 0) or 0),
+                "GP": gp,
+            }
+    if cache is not None:
+        cache["player_stats"] = result
+    return result
+
+
+def get_team_ortg_drtg(cache=None):
+    """Team estimated offensive/defensive rating. Dict team_id -> {E_OFF_RATING, E_DEF_RATING}."""
+    if cache is not None and "ortg_drtg" in cache:
+        return cache["ortg_drtg"]
+    season = _season()
+    e = TeamEstimatedMetrics(season=season)
+    time.sleep(REQUEST_DELAY)
+    df = e.get_data_frames()[0]
+    if df is None or df.empty:
+        result = {}
+    else:
+        result = {}
+        for _, row in df.iterrows():
+            tid = int(row["TEAM_ID"])
+            result[tid] = {
+                "E_OFF_RATING": float(row.get("E_OFF_RATING", 0) or 0),
+                "E_DEF_RATING": float(row.get("E_DEF_RATING", 0) or 0),
+            }
+    if cache is not None:
+        cache["ortg_drtg"] = result
+    return result
+
+
+def get_roster_with_stats(team_id, player_stats_cache=None):
+    """
+    Roster for team with per-game stats (MIN, PTS, AST, REB, STL, BLK).
+    Returns list of {player_id, player_name, position, MIN, PTS, AST, REB, STL, BLK}.
+    """
+    roster = get_team_roster(team_id)
+    stats_map = get_league_player_stats_per_game(player_stats_cache)
+    out = []
+    for p in roster:
+        s = stats_map.get(p["player_id"], {})
+        out.append({
+            "player_id": p["player_id"],
+            "player_name": p["player_name"],
+            "position": p["position"],
+            "MIN": s.get("MIN", 0),
+            "PTS": s.get("PTS", 0),
+            "AST": s.get("AST", 0),
+            "REB": s.get("REB", 0),
+            "STL": s.get("STL", 0),
+            "BLK": s.get("BLK", 0),
+        })
+    return out
+
+
+def _normalize_player_name(name):
+    """Lowercase, collapse spaces, for matching injury report to roster."""
+    if not name:
+        return ""
+    return " ".join(str(name).lower().split())
+
+
+def get_available_player_value(team_id, injuries_list, player_stats_cache=None, weights=None):
+    """
+    Sum of weighted stat contributions for players who are NOT out (or half for Questionable).
+    injuries_list: list of {'status': 'Out'|'Questionable', 'player_name': str} for this team.
+    weights: dict e.g. {'PTS': 1.0, 'AST': 0.5, 'REB': 0.4, 'STL': 0.6, 'BLK': 0.6}. MIN can be used as weight for minutes.
+    Returns single float 'value' and list of out player names for logging.
+    """
+    if weights is None:
+        weights = {"PTS": 1.0, "AST": 0.5, "REB": 0.4, "STL": 0.6, "BLK": 0.6}
+    roster_stats = get_roster_with_stats(team_id, player_stats_cache)
+    out_names = set()
+    questionable_names = set()
+    for inv in injuries_list or []:
+        pname = _normalize_player_name(inv.get("player_name") or "")
+        if inv.get("status") == "Out":
+            out_names.add(pname)
+        elif inv.get("status") == "Questionable":
+            questionable_names.add(pname)
+    value = 0.0
+    for p in roster_stats:
+        nnorm = _normalize_player_name(p["player_name"])
+        if nnorm in out_names:
+            continue
+        mult = 0.5 if nnorm in questionable_names else 1.0
+        for stat, w in weights.items():
+            if stat == "MIN":
+                continue
+            value += mult * w * (p.get(stat) or 0)
+    return value, list(out_names)
+
+
 def get_recent_form(team_id, n=RECENT_GAMES_N):
     """Last N games for a team: list of W/L (1/0)."""
     season = _season()
@@ -115,7 +255,6 @@ def get_recent_form(team_id, n=RECENT_GAMES_N):
     df = e.get_data_frames()[0]
     if df is None or df.empty:
         return []
-    # WL column is 'W' or 'L'
     df = df.head(n)
     return [1 if wl == "W" else 0 for wl in df["WL"].tolist()]
 
@@ -127,8 +266,9 @@ def _team_name_to_id():
 
 def get_injuries():
     """
-    Current injury report via nbainjuries. Returns dict team_id -> list of {'status': 'Out'|'Questionable'}.
-    Counts only Out/Questionable (not Available). If nbainjuries unavailable, returns {}.
+    Current injury report via nbainjuries. Returns dict team_id -> list of
+    {'status': 'Out'|'Questionable', 'player_name': str}.
+    Counts only Out/Questionable. If nbainjuries unavailable, returns {}.
     """
     try:
         from nbainjuries import injury
@@ -151,7 +291,8 @@ def get_injuries():
         tid = name_to_id.get(team_name)
         if tid is None:
             continue
-        by_team.setdefault(tid, []).append({"status": status})
+        player_name = (row.get("Player Name") or row.get("player_name") or "").strip()
+        by_team.setdefault(tid, []).append({"status": status, "player_name": player_name})
     return by_team
 
 

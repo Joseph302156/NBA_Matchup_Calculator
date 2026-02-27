@@ -1,0 +1,160 @@
+"""
+Build full game payload for web: rosters with statlines, injury status, ORtg/DRtg, win%.
+"""
+from datetime import datetime
+
+from config import RECENT_GAMES_N
+from src.data.fetchers import (
+    get_games_for_date,
+    get_team_season_stats,
+    get_recent_form,
+    get_injuries,
+    get_rest_days,
+    get_team_ortg_drtg,
+    get_available_player_value,
+    get_roster_with_stats,
+    _normalize_player_name,
+)
+from src.analysis.stat_importance import get_player_stat_weights
+from src.model import predict_game
+
+
+def _roster_with_injury_status(team_id, injuries_list, player_stats_cache):
+    """Roster with stats; each player has 'status': 'Playing'|'Out'|'Questionable'."""
+    roster = get_roster_with_stats(team_id, player_stats_cache)
+    out = set()
+    questionable = set()
+    for inv in injuries_list or []:
+        n = _normalize_player_name(inv.get("player_name") or "")
+        if inv.get("status") == "Out":
+            out.add(n)
+        elif inv.get("status") == "Questionable":
+            questionable.add(n)
+    result = []
+    for p in roster:
+        nnorm = _normalize_player_name(p.get("player_name") or "")
+        if nnorm in out:
+            status = "Out"
+        elif nnorm in questionable:
+            status = "Questionable"
+        else:
+            status = "Playing"
+        result.append({**p, "status": status})
+    # Sort: playing first, then questionable, then out; within that by MIN desc (starters first)
+    result.sort(key=lambda x: (0 if x["status"] == "Playing" else 1 if x["status"] == "Questionable" else 2, -float(x.get("MIN") or 0)))
+    return result
+
+
+def build_predictions_for_date(target_date):
+    """
+    target_date: date object or 'YYYY-MM-DD' string.
+    Returns: {
+        "date": "YYYY-MM-DD",
+        "date_display": "Fri, Feb 28, 2026",
+        "games": [
+            {
+                "game_id", "game_date_est",
+                "away_team_name", "away_tricode", "away_team_id",
+                "home_team_name", "home_tricode", "home_team_id",
+                "away_roster": [ { player_name, position, MIN, PTS, AST, REB, STL, BLK, status } ],
+                "home_roster": [ ... ],
+                "away_injuries": [ { player_name, status } ],
+                "home_injuries": [ ... ],
+                "away_ortg", "away_drtg", "home_ortg", "home_drtg",
+                "win_pct_away", "win_pct_home", "pick", "pick_win_pct",
+            },
+            ...
+        ],
+        "error": str or None,
+    }
+    """
+    if hasattr(target_date, "strftime"):
+        date_obj = target_date
+        date_str = target_date.strftime("%Y-%m-%d")
+    else:
+        date_str = str(target_date)[:10]
+        try:
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return {"date": date_str, "date_display": date_str, "games": [], "error": "Invalid date"}
+
+    games = get_games_for_date(date_obj)
+    if not games:
+        return {
+            "date": date_str,
+            "date_display": date_obj.strftime("%a, %b %d, %Y"),
+            "games": [],
+            "error": None,
+        }
+
+    team_stats = get_team_season_stats()
+    team_ids = set()
+    for g in games:
+        team_ids.add(g["home_team_id"])
+        team_ids.add(g["away_team_id"])
+    recent_form = {tid: get_recent_form(tid, RECENT_GAMES_N) for tid in team_ids}
+    injuries = get_injuries()
+    last_game_dates = {}
+    data_cache = {}
+    ortg_drtg = get_team_ortg_drtg(data_cache)
+    try:
+        player_weights = get_player_stat_weights()
+    except Exception:
+        player_weights = {"PTS": 1.0, "AST": 0.5, "REB": 0.4, "STL": 0.6, "BLK": 0.6}
+
+    games_payload = []
+    for g in games:
+        hid = g["home_team_id"]
+        aid = g["away_team_id"]
+        home_injuries = injuries.get(hid, [])
+        away_injuries = injuries.get(aid, [])
+
+        home_roster = _roster_with_injury_status(hid, home_injuries, data_cache)
+        away_roster = _roster_with_injury_status(aid, away_injuries, data_cache)
+
+        home_days = get_rest_days(hid, g["game_date_est"], last_game_dates)
+        away_days = get_rest_days(aid, g["game_date_est"], last_game_dates)
+        rest = {"home_days": home_days, "away_days": away_days}
+
+        avail_home, _ = get_available_player_value(hid, home_injuries, data_cache, player_weights)
+        avail_away, _ = get_available_player_value(aid, away_injuries, data_cache, player_weights)
+
+        win_home, win_away, pick_home = predict_game(
+            g, team_stats, recent_form=recent_form, injuries=injuries, rest=rest,
+            ortg_drtg=ortg_drtg, available_value_home=avail_home, available_value_away=avail_away,
+        )
+        pick_team = g["home_team_name"] if pick_home else g["away_team_name"]
+        pick_pct = win_home if pick_home else win_away
+
+        home_od = ortg_drtg.get(hid, {})
+        away_od = ortg_drtg.get(aid, {})
+
+        games_payload.append({
+            "game_id": g["game_id"],
+            "game_date_est": g["game_date_est"],
+            "away_team_name": g["away_team_name"],
+            "away_tricode": g["away_tricode"],
+            "away_team_id": aid,
+            "home_team_name": g["home_team_name"],
+            "home_tricode": g["home_tricode"],
+            "home_team_id": hid,
+            "away_roster": away_roster,
+            "home_roster": home_roster,
+            "away_injuries": away_injuries,
+            "home_injuries": home_injuries,
+            "away_ortg": round(float(away_od.get("E_OFF_RATING") or 0), 1),
+            "away_drtg": round(float(away_od.get("E_DEF_RATING") or 0), 1),
+            "home_ortg": round(float(home_od.get("E_OFF_RATING") or 0), 1),
+            "home_drtg": round(float(home_od.get("E_DEF_RATING") or 0), 1),
+            "win_pct_away": round(win_away, 3),
+            "win_pct_home": round(win_home, 3),
+            "pick": pick_team,
+            "pick_win_pct": round(pick_pct, 3),
+        })
+
+    return {
+        "date": date_str,
+        "date_display": date_obj.strftime("%a, %b %d, %Y"),
+        "games": games_payload,
+        "error": None,
+    }

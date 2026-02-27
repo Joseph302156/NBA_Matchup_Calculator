@@ -54,8 +54,25 @@ python main.py --json       # machine-readable JSON
 | **Injuries** | **ESPN** roster API (primary), `nbainjuries` (fallback) | Out/Doubtful/Questionable by **player name**; matched to roster; no Java required for ESPN |
 | **Long-term / no recent games** | `nba_api` LeagueGameLog (player) | Players with **no game in 14+ days** (or none this season) are shown as Out so long-term injured aren’t shown as Playing |
 | **Team ORtg/DRtg** | TeamEstimatedMetrics | E_OFF_RATING, E_DEF_RATING per team |
-| **Player stats** | CommonTeamRoster + LeagueDashPlayerStats (PerGame) | MIN, PTS, AST, REB, STL, BLK; injured players excluded from "available value" |
+| **Player stats** | CommonTeamRoster + LeagueDashPlayerStats (PerGame) | Season MIN, PTS, AST, REB, STL, BLK; blended with **last 5 games** (LeagueGameLog) so recent form matters; injured players excluded from "available value" |
 | **Stat importance** | `src/analysis/stat_importance.py` | Correlation of team PTS/AST/REB/STL/BLK with W_PCT → weights for player contribution |
+
+## How win % is calculated
+
+1. **Strength (point-like units)**  
+   Each team gets a strength number from: **season point differential** (PLUS_MINUS), **team net rating** (ORtg − DRtg, scaled), and **available player value** (weighted sum of PTS/AST/REB/STL/BLK for non-out players, using **season + last 5 games** blend so recent performance matters more).
+
+2. **Adjustments**  
+   We add **home-court advantage** (~2.5 pts), **recent form** (last 10 games win rate), subtract **injury penalties** (Out / Questionable), and **rest** (back-to-back penalty, extra rest bonus).
+
+3. **Strength difference → win %**  
+   `diff = home_strength - away_strength`. We convert to probability with a **logistic curve**: `win_pct_home = 1 / (1 + exp(-diff / 9))`. The divisor 9 keeps the curve gentle so a big gap doesn’t push 98%. We then **clamp** win % to **12%–88%** so you rarely see extreme numbers.
+
+4. **Tunables in `config.py`**  
+   - `PLAYER_VALUE_WEIGHT`: how much “who’s playing and their stats” matters.  
+   - `LOGISTIC_SCALE`: larger = softer curve (fewer extremes).  
+   - `WIN_PCT_FLOOR` / `WIN_PCT_CEIL`: clamp range.  
+   - `RECENT_STATS_GAMES` and `RECENT_STATS_WEIGHT`: last N games and blend with season (e.g. 0.55 = slight tilt to recent).
 
 ## Improving later
 

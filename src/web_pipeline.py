@@ -14,6 +14,7 @@ from src.data.fetchers import (
     get_available_player_value,
     get_roster_with_stats,
     get_player_last_game_dates,
+    get_player_recent_stats,
     augment_injuries_with_recent_games,
     _normalize_name_for_match,
 )
@@ -116,6 +117,10 @@ def build_predictions_for_date(target_date):
     last_game_dates = {}
     ortg_drtg = get_team_ortg_drtg(data_cache)
     try:
+        player_recent = get_player_recent_stats(data_cache)
+    except Exception:
+        player_recent = {}
+    try:
         player_weights = get_player_stat_weights()
     except Exception:
         player_weights = {"PTS": 1.0, "AST": 0.5, "REB": 0.4, "STL": 0.6, "BLK": 0.6}
@@ -134,8 +139,8 @@ def build_predictions_for_date(target_date):
         away_days = get_rest_days(aid, g["game_date_est"], last_game_dates)
         rest = {"home_days": home_days, "away_days": away_days}
 
-        avail_home, _ = get_available_player_value(hid, home_injuries, data_cache, player_weights)
-        avail_away, _ = get_available_player_value(aid, away_injuries, data_cache, player_weights)
+        avail_home, _ = get_available_player_value(hid, home_injuries, data_cache, player_weights, recent_stats=player_recent)
+        avail_away, _ = get_available_player_value(aid, away_injuries, data_cache, player_weights, recent_stats=player_recent)
 
         win_home, win_away, pick_home = predict_game(
             g, team_stats, recent_form=recent_form, injuries=injuries, rest=rest,

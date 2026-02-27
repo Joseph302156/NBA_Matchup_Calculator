@@ -1,5 +1,7 @@
 """
 Win-probability model: team strength, home/away, recent form, injuries, rest/B2B.
+Strength is in "point-like" units; we convert to win % with a logistic curve.
+More weight is on who's actually playing and their (season + recent) stats.
 """
 import math
 
@@ -14,6 +16,9 @@ from config import (
     INJURY_QUESTIONABLE_WEIGHT,
     ORTG_DRTG_WEIGHT,
     PLAYER_VALUE_WEIGHT,
+    LOGISTIC_SCALE,
+    WIN_PCT_FLOOR,
+    WIN_PCT_CEIL,
 )
 
 
@@ -29,7 +34,7 @@ def _form_rate(form_list):
 
 
 def _injury_penalty(injury_list):
-    """Sum weighted penalty for Out (1.0) and Questionable (0.4)."""
+    """Sum weighted penalty for Out (1.0), Questionable (0.4), Doubtful (0.4)."""
     if not injury_list:
         return 0.0
     s = 0.0
@@ -40,7 +45,7 @@ def _injury_penalty(injury_list):
             status = str(item)
         if status == "Out":
             s += INJURY_OUT_WEIGHT
-        elif status == "Questionable":
+        elif status in ("Questionable", "Doubtful"):
             s += INJURY_QUESTIONABLE_WEIGHT
     return s * INJURY_WEIGHT
 
@@ -125,7 +130,9 @@ def predict_game(
             away_str += REST_EXTRA_BONUS_PTS
 
     diff = home_str - away_str
-    win_pct_home = 1 / (1 + math.exp(-diff / 5))
+    # Softer curve: win_pct = 1 / (1 + exp(-diff/scale)). Larger scale = less extreme %.
+    raw = 1 / (1 + math.exp(-diff / LOGISTIC_SCALE))
+    win_pct_home = max(WIN_PCT_FLOOR, min(WIN_PCT_CEIL, raw))
     win_pct_away = 1 - win_pct_home
     pick_home = win_pct_home >= 0.5
     return round(win_pct_home, 3), round(win_pct_away, 3), pick_home

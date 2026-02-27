@@ -20,7 +20,7 @@ from nba_api.stats.library.parameters import PerModeDetailed, PlayerOrTeamAbbrev
 from nba_api.stats.static import teams as static_teams
 from nba_api.live.nba.endpoints import scoreboard
 
-from config import current_season, UPCOMING_DAYS, RECENT_GAMES_N, REQUEST_DELAY, DAYS_SINCE_LAST_GAME_OUT
+from config import current_season, UPCOMING_DAYS, RECENT_GAMES_N, REQUEST_DELAY, DAYS_SINCE_LAST_GAME_OUT, RECENT_STATS_GAMES, RECENT_STATS_WEIGHT
 
 
 def _season():
@@ -283,15 +283,18 @@ def _normalize_name_for_match(name):
     return s
 
 
-def get_available_player_value(team_id, injuries_list, player_stats_cache=None, weights=None):
+def get_available_player_value(team_id, injuries_list, player_stats_cache=None, weights=None, recent_stats=None, recent_weight=None):
     """
-    Sum of weighted stat contributions for players who are NOT out (or half for Questionable).
-    injuries_list: list of {'status': 'Out'|'Questionable', 'player_name': str} for this team.
-    weights: dict e.g. {'PTS': 1.0, 'AST': 0.5, 'REB': 0.4, 'STL': 0.6, 'BLK': 0.6}. MIN can be used as weight for minutes.
+    Sum of weighted stat contributions for players who are NOT out (or half for Questionable/Doubtful).
+    If recent_stats (dict player_id -> {MIN, PTS, ...}) is provided, each player's contribution
+    uses a blend of season and recent averages so "how they're playing lately" matters.
+    recent_weight: 0 = season only, 1 = recent only; default RECENT_STATS_WEIGHT.
     Returns single float 'value' and list of out player names for logging.
     """
     if weights is None:
         weights = {"PTS": 1.0, "AST": 0.5, "REB": 0.4, "STL": 0.6, "BLK": 0.6}
+    if recent_weight is None:
+        recent_weight = RECENT_STATS_WEIGHT
     roster_stats = get_roster_with_stats(team_id, player_stats_cache)
     out_names = set()
     questionable_names = set()
@@ -309,10 +312,18 @@ def get_available_player_value(team_id, injuries_list, player_stats_cache=None, 
         if nnorm in out_names:
             continue
         mult = 0.5 if nnorm in questionable_names else 1.0
+        pid = p.get("player_id")
+        recent = (recent_stats or {}).get(pid) if pid is not None else None
         for stat, w in weights.items():
             if stat == "MIN":
                 continue
-            value += mult * w * (p.get(stat) or 0)
+            season_val = p.get(stat) or 0
+            if recent and stat in recent:
+                # Blend season and recent (recent_weight toward recent)
+                blended = (1 - recent_weight) * season_val + recent_weight * (recent.get(stat) or 0)
+                value += mult * w * blended
+            else:
+                value += mult * w * season_val
     return value, list(out_names)
 
 
@@ -379,6 +390,64 @@ def get_player_last_game_dates(cache=None):
             continue
     if cache is not None:
         cache["player_last_game"] = result
+    return result
+
+
+def get_player_recent_stats(cache=None, last_n=None):
+    """
+    Per-player averages over their last N games (LeagueGameLog player mode).
+    Returns dict player_id -> { MIN, PTS, AST, REB, STL, BLK }.
+    Used to blend with season stats so "how they're playing lately" matters.
+    """
+    if last_n is None:
+        last_n = RECENT_STATS_GAMES
+    if cache is not None and "player_recent_stats" in cache:
+        return cache["player_recent_stats"]
+    season = _season()
+    try:
+        e = LeagueGameLog(
+            season=season,
+            player_or_team_abbreviation=PlayerOrTeamAbbreviation.player,
+        )
+        time.sleep(REQUEST_DELAY)
+        df = e.get_data_frames()[0]
+    except Exception:
+        if cache is not None:
+            cache["player_recent_stats"] = {}
+        return {}
+    if df is None or df.empty:
+        if cache is not None:
+            cache["player_recent_stats"] = {}
+        return {}
+    pid_col = "PLAYER_ID" if "PLAYER_ID" in df.columns else ("Player_ID" if "Player_ID" in df.columns else None)
+    date_col = "GAME_DATE" if "GAME_DATE" in df.columns else None
+    stat_cols = ["MIN", "PTS", "AST", "REB", "STL", "BLK"]
+    if pid_col is None or date_col is None or any(c not in df.columns for c in stat_cols):
+        if cache is not None:
+            cache["player_recent_stats"] = {}
+        return {}
+    df = df.copy()
+    df["_date"] = pd.to_datetime(df[date_col], errors="coerce")
+    df = df.dropna(subset=["_date"])
+    df = df.sort_values("_date", ascending=False)
+    result = {}
+    for pid, grp in df.groupby(pid_col):
+        head = grp.head(last_n)
+        if head.empty:
+            continue
+        try:
+            result[int(pid)] = {
+                "MIN": float(head["MIN"].mean()),
+                "PTS": float(head["PTS"].mean()),
+                "AST": float(head["AST"].mean()),
+                "REB": float(head["REB"].mean()),
+                "STL": float(head["STL"].mean()),
+                "BLK": float(head["BLK"].mean()),
+            }
+        except Exception:
+            continue
+    if cache is not None:
+        cache["player_recent_stats"] = result
     return result
 
 

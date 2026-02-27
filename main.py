@@ -19,6 +19,7 @@ from src.data.fetchers import (
     get_team_ortg_drtg,
     get_available_player_value,
     get_player_last_game_dates,
+    get_player_recent_stats,
     augment_injuries_with_recent_games,
 )
 from src.analysis.stat_importance import get_player_stat_weights
@@ -51,6 +52,10 @@ def main():
     data_cache = {}
     player_last_game = get_player_last_game_dates(data_cache)
     augment_injuries_with_recent_games(injuries, team_ids, player_last_game)
+    try:
+        player_recent = get_player_recent_stats(data_cache)
+    except Exception:
+        player_recent = {}
     last_game_dates = {}
 
     ortg_drtg = get_team_ortg_drtg(data_cache)
@@ -70,10 +75,10 @@ def main():
         rest = {"home_days": home_days, "away_days": away_days}
 
         avail_home, _ = get_available_player_value(
-            g["home_team_id"], injuries.get(g["home_team_id"], []), data_cache, player_weights
+            g["home_team_id"], injuries.get(g["home_team_id"], []), data_cache, player_weights, recent_stats=player_recent
         )
         avail_away, _ = get_available_player_value(
-            g["away_team_id"], injuries.get(g["away_team_id"], []), data_cache, player_weights
+            g["away_team_id"], injuries.get(g["away_team_id"], []), data_cache, player_weights, recent_stats=player_recent
         )
 
         win_home, win_away, pick_home = predict_game(

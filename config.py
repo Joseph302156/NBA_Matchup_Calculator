@@ -30,8 +30,17 @@ INJURY_WEIGHT = 0.35            # multiplier: penalty = INJURY_WEIGHT * (out*1 +
 
 # Team offensive/defensive rating (from TeamEstimatedMetrics)
 ORTG_DRTG_WEIGHT = 0.015       # (ortg - drtg) scale: ~100 pts typical; 0.015 * 5 ≈ 0.075 strength
-# Available player value (weighted sum of non-injured player stats)
-PLAYER_VALUE_WEIGHT = 0.002    # scale so ~200 team value => 0.4 strength
+# Available player value (weighted sum of non-injured player stats) — higher = more weight on who's playing
+PLAYER_VALUE_WEIGHT = 0.005    # increased so player capability and recent form matter more
+
+# Win % curve: soften extremes so we rarely see 98% or 2%
+LOGISTIC_SCALE = 9            # larger = gentler curve (diff/9 instead of diff/5)
+WIN_PCT_FLOOR = 0.12          # minimum home win % (avoid 0–5% displays)
+WIN_PCT_CEIL = 0.88           # maximum home win % (avoid 95–100% displays)
+
+# Player recent games: blend season stats with last N games for "how they're playing lately"
+RECENT_STATS_GAMES = 5         # last N games per player for recent averages
+RECENT_STATS_WEIGHT = 0.55     # 0 = season only, 1 = recent only; 0.55 = slight tilt to recent
 
 # Long-term / no-recent-game: treat as Out if no game in this many days
 DAYS_SINCE_LAST_GAME_OUT = 14

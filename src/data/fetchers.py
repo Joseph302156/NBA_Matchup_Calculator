@@ -11,15 +11,16 @@ from nba_api.stats.endpoints import (
     CommonTeamRoster,
     LeagueDashPlayerStats,
     LeagueDashTeamStats,
+    LeagueGameLog,
     ScheduleLeagueV2,
     TeamGameLog,
     TeamEstimatedMetrics,
 )
-from nba_api.stats.library.parameters import PerModeDetailed
+from nba_api.stats.library.parameters import PerModeDetailed, PlayerOrTeamAbbreviation
 from nba_api.stats.static import teams as static_teams
 from nba_api.live.nba.endpoints import scoreboard
 
-from config import current_season, UPCOMING_DAYS, RECENT_GAMES_N, REQUEST_DELAY
+from config import current_season, UPCOMING_DAYS, RECENT_GAMES_N, REQUEST_DELAY, DAYS_SINCE_LAST_GAME_OUT
 
 
 def _season():
@@ -330,6 +331,84 @@ def get_recent_form(team_id, n=RECENT_GAMES_N):
 def _team_name_to_id():
     """Map full team name (e.g. 'Boston Celtics') -> nba_api team id."""
     return {t["full_name"]: t["id"] for t in static_teams.get_teams()}
+
+
+def get_player_last_game_dates(cache=None):
+    """
+    Last game date for every player who has played this season (league game log, player mode).
+    Returns dict player_id (int) -> datetime.date. Cached in cache['player_last_game'] if provided.
+    Used to treat "no game in 14+ days" as Out (long-term injured / not on active report).
+    """
+    if cache is not None and "player_last_game" in cache:
+        return cache["player_last_game"]
+    season = _season()
+    try:
+        e = LeagueGameLog(
+            season=season,
+            player_or_team_abbreviation=PlayerOrTeamAbbreviation.player,
+        )
+        time.sleep(REQUEST_DELAY)
+        df = e.get_data_frames()[0]
+    except Exception:
+        if cache is not None:
+            cache["player_last_game"] = {}
+        return {}
+    if df is None or df.empty:
+        if cache is not None:
+            cache["player_last_game"] = {}
+        return {}
+    # Player mode returns PLAYER_ID and GAME_DATE (NBA API)
+    pid_col = "PLAYER_ID" if "PLAYER_ID" in df.columns else None
+    if pid_col is None and "Player_ID" in df.columns:
+        pid_col = "Player_ID"
+    date_col = "GAME_DATE" if "GAME_DATE" in df.columns else "GAME_DATE"
+    if pid_col is None or date_col not in df.columns:
+        if cache is not None:
+            cache["player_last_game"] = {}
+        return {}
+    df = df.copy()
+    df["_date"] = pd.to_datetime(df[date_col], errors="coerce")
+    df = df.dropna(subset=["_date"])
+    # Most recent game per player (log is usually descending by date)
+    last = df.groupby(pid_col)["_date"].max()
+    result = {}
+    for pid, dt in last.items():
+        try:
+            result[int(pid)] = dt.date()
+        except Exception:
+            continue
+    if cache is not None:
+        cache["player_last_game"] = result
+    return result
+
+
+def augment_injuries_with_recent_games(injuries, team_ids, player_last_game_dates, cutoff_days=None):
+    """
+    Add to injuries any roster player who hasn't played in cutoff_days (default DAYS_SINCE_LAST_GAME_OUT).
+    Mutates injuries in place. Use so long-term injured players (off current report) show as Out.
+    """
+    if cutoff_days is None:
+        cutoff_days = DAYS_SINCE_LAST_GAME_OUT
+    from datetime import date
+    today = date.today()
+    for tid in team_ids:
+        roster = get_team_roster(tid)
+        existing = {_normalize_name_for_match(i.get("player_name") or "") for i in injuries.get(tid, [])}
+        for p in roster:
+            pname = (p.get("player_name") or "").strip()
+            if not pname:
+                continue
+            if _normalize_name_for_match(pname) in existing:
+                continue
+            pid = p.get("player_id")
+            last_d = player_last_game_dates.get(pid) if pid is not None else None
+            if last_d is None:
+                # No game this season -> treat as Out
+                days_since = 999
+            else:
+                days_since = (today - last_d).days
+            if days_since >= cutoff_days:
+                injuries.setdefault(tid, []).append({"status": "Out", "player_name": pname})
 
 
 def _espn_team_id_to_nba_id():

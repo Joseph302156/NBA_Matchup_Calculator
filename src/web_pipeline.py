@@ -13,6 +13,8 @@ from src.data.fetchers import (
     get_team_ortg_drtg,
     get_available_player_value,
     get_roster_with_stats,
+    get_player_last_game_dates,
+    augment_injuries_with_recent_games,
     _normalize_name_for_match,
 )
 from src.analysis.stat_importance import get_player_stat_weights
@@ -103,6 +105,9 @@ def build_predictions_for_date(target_date):
         team_ids.add(g["away_team_id"])
     recent_form = {tid: get_recent_form(tid, RECENT_GAMES_N) for tid in team_ids}
     injuries = get_injuries()
+    # Include long-term injured: anyone not on current report but no game in 14+ days
+    player_last_game = get_player_last_game_dates(data_cache)
+    augment_injuries_with_recent_games(injuries, team_ids, player_last_game)
     last_game_dates = {}
     data_cache = {}
     ortg_drtg = get_team_ortg_drtg(data_cache)

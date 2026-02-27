@@ -52,6 +52,7 @@ python main.py --json       # machine-readable JSON
 | Home/away | Schedule | Home-court advantage (~2.5 pts) |
 | **Rest / back-to-back** | TeamGameLog last game date | B2B (0 rest): −2 pts; 2+ days rest: +0.5 pts |
 | **Injuries** | **ESPN** roster API (primary), `nbainjuries` (fallback) | Out/Doubtful/Questionable by **player name**; matched to roster; no Java required for ESPN |
+| **Long-term / no recent games** | `nba_api` LeagueGameLog (player) | Players with **no game in 14+ days** (or none this season) are shown as Out so long-term injured aren’t shown as Playing |
 | **Team ORtg/DRtg** | TeamEstimatedMetrics | E_OFF_RATING, E_DEF_RATING per team |
 | **Player stats** | CommonTeamRoster + LeagueDashPlayerStats (PerGame) | MIN, PTS, AST, REB, STL, BLK; injured players excluded from "available value" |
 | **Stat importance** | `src/analysis/stat_importance.py` | Correlation of team PTS/AST/REB/STL/BLK with W_PCT → weights for player contribution |

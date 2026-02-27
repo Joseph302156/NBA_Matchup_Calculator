@@ -32,3 +32,6 @@ INJURY_WEIGHT = 0.35            # multiplier: penalty = INJURY_WEIGHT * (out*1 +
 ORTG_DRTG_WEIGHT = 0.015       # (ortg - drtg) scale: ~100 pts typical; 0.015 * 5 ≈ 0.075 strength
 # Available player value (weighted sum of non-injured player stats)
 PLAYER_VALUE_WEIGHT = 0.002    # scale so ~200 team value => 0.4 strength
+
+# Long-term / no-recent-game: treat as Out if no game in this many days
+DAYS_SINCE_LAST_GAME_OUT = 14

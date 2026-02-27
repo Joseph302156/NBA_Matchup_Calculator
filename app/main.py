@@ -13,7 +13,7 @@ from fastapi.templating import Jinja2Templates
 
 from src.web_pipeline import build_predictions_for_date
 
-app = FastAPI(title="NBA Win Probability", version="1.0")
+app = FastAPI(title="NBA Matchup Calculator", version="1.0")
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE, "templates"))

@@ -103,7 +103,9 @@ body {
 }
 
 /* ---------- Home page: centered hero ---------- */
+/* ---------- Home page: centered hero ---------- */
 .page-home .main {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -111,9 +113,32 @@ body {
   min-height: calc(100vh - 180px);
   padding: 3rem 1.5rem;
   text-align: center;
+  overflow: hidden;
+}
+
+/* Subtle grayscale basketball outline — upper right, background aesthetic */
+.page-home .hero-bg {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translate(15%, -50%);
+  width: min(320px, 45vw);
+  height: min(320px, 45vw);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page-home .hero-bg .basketball-outline {
+  width: 100%;
+  height: 100%;
+  color: var(--text);
+  opacity: 0.045;
+  filter: grayscale(1);
 }
 
 .page-home .hero {
+  position: relative;
+  z-index: 1;
   max-width: 520px;
   margin: 0 auto 2.5rem;
 }
@@ -143,6 +168,8 @@ body {
   width: 100%;
   max-width: 420px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .page-home .date-form {
@@ -180,6 +207,8 @@ body {
   max-width: 420px;
   margin-left: auto;
   margin-right: auto;
+  position: relative;
+  z-index: 1;
 }
 
 /* ---------- Date form (results page or inline) ---------- */

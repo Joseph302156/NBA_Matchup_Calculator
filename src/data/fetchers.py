@@ -259,10 +259,26 @@ def get_roster_with_stats(team_id, player_stats_cache=None):
 
 
 def _normalize_player_name(name):
-    """Lowercase, collapse spaces, for matching injury report to roster."""
+    """Lowercase, collapse spaces. For matching injury report to roster."""
     if not name:
         return ""
     return " ".join(str(name).lower().split())
+
+
+def _normalize_name_for_match(name):
+    """
+    Canonical form for matching: injury report uses "Last, First" (e.g. "Brown, Jaylen"),
+    roster uses "First Last" (e.g. "Jaylen Brown"). Convert both to "first last".
+    """
+    if not name:
+        return ""
+    s = " ".join(str(name).strip().lower().split())
+    if "," in s:
+        parts = s.split(",", 1)
+        last_part = parts[0].strip()
+        first_part = parts[1].strip()
+        return f"{first_part} {last_part}"
+    return s
 
 
 def get_available_player_value(team_id, injuries_list, player_stats_cache=None, weights=None):
@@ -278,14 +294,16 @@ def get_available_player_value(team_id, injuries_list, player_stats_cache=None, 
     out_names = set()
     questionable_names = set()
     for inv in injuries_list or []:
-        pname = _normalize_player_name(inv.get("player_name") or "")
+        pname = _normalize_name_for_match(inv.get("player_name") or "")
+        if not pname:
+            continue
         if inv.get("status") == "Out":
             out_names.add(pname)
-        elif inv.get("status") == "Questionable":
+        elif inv.get("status") in ("Questionable", "Doubtful"):
             questionable_names.add(pname)
     value = 0.0
     for p in roster_stats:
-        nnorm = _normalize_player_name(p["player_name"])
+        nnorm = _normalize_name_for_match(p["player_name"])
         if nnorm in out_names:
             continue
         mult = 0.5 if nnorm in questionable_names else 1.0
@@ -316,8 +334,8 @@ def _team_name_to_id():
 def get_injuries():
     """
     Current injury report via nbainjuries. Returns dict team_id -> list of
-    {'status': 'Out'|'Questionable', 'player_name': str}.
-    Counts only Out/Questionable. If nbainjuries unavailable, returns {}.
+    {'status': 'Out'|'Doubtful'|'Questionable', 'player_name': str}.
+    Counts only Out/Doubtful/Questionable. If nbainjuries unavailable, returns {}.
     """
     try:
         from nbainjuries import injury
@@ -325,22 +343,39 @@ def get_injuries():
         return {}
     name_to_id = _team_name_to_id()
     now = datetime.utcnow()
-    try:
-        data = injury.get_reportdata(datetime(now.year, now.month, now.day, now.hour, now.minute))
-    except Exception:
-        return {}
+    # Reports are published at specific times (e.g. 5pm ET day before). Try a few timestamps.
+    timestamps_to_try = [
+        (now.year, now.month, now.day, now.hour, now.minute),
+        (now.year, now.month, now.day, 17, 0),
+        (now.year, now.month, now.day, 0, 0),
+    ]
+    if now.day >= 2:
+        try:
+            timestamps_to_try.append((now.year, now.month, now.day - 1, 17, 0))
+        except Exception:
+            pass
+    data = []
+    for y, mo, d, h, mi in timestamps_to_try:
+        try:
+            data = injury.get_reportdata(datetime(y, mo, d, h, mi))
+            if data:
+                break
+        except Exception:
+            continue
     if not data:
         return {}
     by_team = {}
     for row in data:
         team_name = row.get("Team") or row.get("team")
         status = (row.get("Current Status") or row.get("current_status") or "").strip()
-        if status not in ("Out", "Questionable"):
+        if status not in ("Out", "Questionable", "Doubtful"):
             continue
         tid = name_to_id.get(team_name)
         if tid is None:
             continue
         player_name = (row.get("Player Name") or row.get("player_name") or "").strip()
+        if not player_name:
+            continue
         by_team.setdefault(tid, []).append({"status": status, "player_name": player_name})
     return by_team
 

@@ -13,35 +13,44 @@ from src.data.fetchers import (
     get_team_ortg_drtg,
     get_available_player_value,
     get_roster_with_stats,
-    _normalize_player_name,
+    _normalize_name_for_match,
 )
 from src.analysis.stat_importance import get_player_stat_weights
 from src.model import predict_game
 
 
 def _roster_with_injury_status(team_id, injuries_list, player_stats_cache):
-    """Roster with stats; each player has 'status': 'Playing'|'Out'|'Questionable'."""
+    """Roster with stats; each player has 'status': 'Playing'|'Out'|'Questionable'|'Doubtful'."""
     roster = get_roster_with_stats(team_id, player_stats_cache)
     out = set()
     questionable = set()
+    doubtful = set()
     for inv in injuries_list or []:
-        n = _normalize_player_name(inv.get("player_name") or "")
-        if inv.get("status") == "Out":
+        n = _normalize_name_for_match(inv.get("player_name") or "")
+        if not n:
+            continue
+        st = inv.get("status")
+        if st == "Out":
             out.add(n)
-        elif inv.get("status") == "Questionable":
+        elif st == "Questionable":
             questionable.add(n)
+        elif st == "Doubtful":
+            doubtful.add(n)
     result = []
     for p in roster:
-        nnorm = _normalize_player_name(p.get("player_name") or "")
+        nnorm = _normalize_name_for_match(p.get("player_name") or "")
         if nnorm in out:
             status = "Out"
+        elif nnorm in doubtful:
+            status = "Doubtful"
         elif nnorm in questionable:
             status = "Questionable"
         else:
             status = "Playing"
         result.append({**p, "status": status})
-    # Sort: playing first, then questionable, then out; within that by MIN desc (starters first)
-    result.sort(key=lambda x: (0 if x["status"] == "Playing" else 1 if x["status"] == "Questionable" else 2, -float(x.get("MIN") or 0)))
+    # Sort: playing first, then questionable, doubtful, out; within that by MIN desc
+    order = {"Playing": 0, "Questionable": 1, "Doubtful": 2, "Out": 3}
+    result.sort(key=lambda x: (order.get(x["status"], 4), -float(x.get("MIN") or 0)))
     return result
 
 

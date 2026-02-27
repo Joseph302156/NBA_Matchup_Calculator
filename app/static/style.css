@@ -415,6 +415,11 @@ body {
   color: #b91c1c;
 }
 
+.badge.doubtful {
+  background: #fef3c7;
+  color: #b45309;
+}
+
 .injury-label {
   margin: 0.875rem 0 0.35rem;
   font-size: 0.8125rem;

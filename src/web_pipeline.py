@@ -105,11 +105,15 @@ def build_predictions_for_date(target_date):
         team_ids.add(g["away_team_id"])
     recent_form = {tid: get_recent_form(tid, RECENT_GAMES_N) for tid in team_ids}
     injuries = get_injuries()
-    # Include long-term injured: anyone not on current report but no game in 14+ days
-    player_last_game = get_player_last_game_dates(data_cache)
-    augment_injuries_with_recent_games(injuries, team_ids, player_last_game)
-    last_game_dates = {}
     data_cache = {}
+    # Long-term injured: no game in 14+ days → show as Out (best-effort; skip on error)
+    try:
+        player_last_game = get_player_last_game_dates(data_cache)
+        if player_last_game:
+            augment_injuries_with_recent_games(injuries, team_ids, player_last_game)
+    except Exception:
+        pass
+    last_game_dates = {}
     ortg_drtg = get_team_ortg_drtg(data_cache)
     try:
         player_weights = get_player_stat_weights()

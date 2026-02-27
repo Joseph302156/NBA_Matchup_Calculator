@@ -88,7 +88,7 @@ body {
 }
 
 .main {
-  max-width: 1100px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
 }
@@ -179,16 +179,22 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.5rem 1.75rem;
+  padding: 2rem 2.25rem;
   box-shadow: var(--shadow);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
-  min-width: 0;
-  overflow: hidden;
 }
 
 .game-card:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--border);
+}
+
+.game-card .matchup-header,
+.game-card .win-pct-bar,
+.game-card .win-pct-labels,
+.game-card .pick,
+.game-card .ratings {
+  text-align: center;
 }
 
 .matchup-header {
@@ -248,6 +254,7 @@ body {
   color: var(--text-secondary);
   margin-bottom: 0.875rem;
   font-weight: 500;
+  max-width: 100%;
 }
 
 .pick {
@@ -259,6 +266,7 @@ body {
   border-radius: var(--radius-sm);
   display: inline-block;
   font-weight: 500;
+  text-align: center;
 }
 
 .ratings {
@@ -266,6 +274,7 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  justify-items: center;
 }
 
 .team-ratings {
@@ -273,6 +282,8 @@ body {
   background: var(--bg);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-light);
+  text-align: center;
+  min-width: 140px;
 }
 
 .team-ratings h4 {
@@ -291,13 +302,14 @@ body {
 .rosters {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  min-width: 0;
+  gap: 2rem;
+  justify-items: center;
 }
 
 @media (max-width: 900px) {
   .rosters {
     grid-template-columns: 1fr;
+    justify-items: stretch;
   }
   .ratings {
     grid-template-columns: 1fr;
@@ -305,8 +317,8 @@ body {
 }
 
 .roster {
-  min-width: 0;
-  overflow: hidden;
+  width: 100%;
+  max-width: 520px;
 }
 
 .roster h4 {
@@ -314,50 +326,24 @@ body {
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text);
+  text-align: center;
 }
 
 .roster table {
   width: 100%;
-  min-width: 0;
   border-collapse: collapse;
   font-size: 0.8125rem;
   border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--border);
-  table-layout: fixed;
+  margin: 0 auto;
 }
 
 .roster th,
 .roster td {
-  padding: 0.5rem 0.5rem;
-  text-align: left;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
   border-bottom: 1px solid var(--border-light);
-  overflow: hidden;
-}
-
-/* Player name: take remaining space, truncate long names */
-.roster td:first-child,
-.roster th:first-child {
-  min-width: 0;
-  max-width: 35%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-right: 0.5rem;
-}
-
-/* Pos & Status: compact */
-.roster th:nth-child(2),
-.roster td:nth-child(2) { width: 2.5em; text-align: center; }
-.roster th:nth-child(3),
-.roster td:nth-child(3) { width: 4.2em; }
-
-/* Stat columns: fixed narrow width, right-aligned numbers */
-.roster th:nth-child(n+4),
-.roster td:nth-child(n+4) {
-  width: 2.75em;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 
 .roster th {
@@ -367,6 +353,17 @@ body {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.roster td:first-child,
+.roster th:first-child {
+  text-align: left;
+  padding-left: 0.875rem;
+}
+
+.roster td:nth-child(n+4),
+.roster th:nth-child(n+4) {
+  font-variant-numeric: tabular-nums;
 }
 
 .roster tbody tr {
@@ -423,6 +420,7 @@ body {
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-secondary);
+  text-align: left;
 }
 
 .injury-list {

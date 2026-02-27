@@ -277,6 +277,9 @@ body {
   padding: 2rem calc(2.25rem + 0.5in);
   box-shadow: var(--shadow);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .game-card:hover {
@@ -332,6 +335,7 @@ body {
   overflow: hidden;
   margin-bottom: 0.5rem;
   background: var(--bg-card);
+  width: 100%;
 }
 
 .win-pct-bar .bar.away {
@@ -352,6 +356,7 @@ body {
   margin-bottom: 0.875rem;
   font-weight: 500;
   max-width: 100%;
+  width: 100%;
 }
 
 .pick {
@@ -373,6 +378,8 @@ body {
   gap: 1rem;
   margin-bottom: 1.5rem;
   justify-items: center;
+  width: 100%;
+  max-width: 400px;
 }
 
 .team-ratings {
@@ -402,6 +409,8 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   justify-items: center;
+  width: 100%;
+  max-width: 1100px;
 }
 
 @media (max-width: 900px) {
@@ -456,7 +465,7 @@ body {
 
 .roster td:first-child,
 .roster th:first-child {
-  text-align: left;
+  text-align: center;
   padding-left: 0.875rem;
 }
 

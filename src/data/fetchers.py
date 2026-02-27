@@ -333,9 +333,11 @@ def _team_name_to_id():
 
 def get_injuries():
     """
-    Current injury report via nbainjuries. Returns dict team_id -> list of
+    Injury report via nbainjuries. Uses the most recent available report: tries
+    timestamps from now going backward (every 3 hours, up to 7 days) and returns
+    the first non-empty result. Returns dict team_id -> list of
     {'status': 'Out'|'Doubtful'|'Questionable', 'player_name': str}.
-    Counts only Out/Doubtful/Questionable. If nbainjuries unavailable, returns {}.
+    If nbainjuries unavailable or no report found, returns {}.
     """
     try:
         from nbainjuries import injury
@@ -343,21 +345,19 @@ def get_injuries():
         return {}
     name_to_id = _team_name_to_id()
     now = datetime.utcnow()
-    # Reports are published at specific times (e.g. 5pm ET day before). Try a few timestamps.
-    timestamps_to_try = [
-        (now.year, now.month, now.day, now.hour, now.minute),
-        (now.year, now.month, now.day, 17, 0),
-        (now.year, now.month, now.day, 0, 0),
-    ]
-    if now.day >= 2:
-        try:
-            timestamps_to_try.append((now.year, now.month, now.day - 1, 17, 0))
-        except Exception:
-            pass
+    # Step backward every 6 hours for up to 6 days; use first non-empty report (last made).
+    step_hours = 6
+    max_hours_back = 24 * 6
     data = []
-    for y, mo, d, h, mi in timestamps_to_try:
+    for hours_back in range(0, max_hours_back, step_hours):
+        if hours_back == 0:
+            ts = now
+        else:
+            ts = now - timedelta(hours=hours_back)
         try:
-            data = injury.get_reportdata(datetime(y, mo, d, h, mi))
+            if hours_back > 0:
+                time.sleep(0.25)
+            data = injury.get_reportdata(ts)
             if data:
                 break
         except Exception:

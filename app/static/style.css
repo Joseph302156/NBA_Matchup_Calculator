@@ -14,16 +14,16 @@
   --primary: #3b82f6;
   --primary-hover: #60a5fa;
   --primary-muted: rgba(59, 130, 246, 0.15);
-  --away: #38bdf8;
-  --away-muted: rgba(56, 189, 248, 0.2);
-  --home: #34d399;
-  --home-muted: rgba(52, 211, 153, 0.2);
+  --away: #93c5fd;
+  --away-muted: rgba(147, 197, 253, 0.22);
+  --home: #86efac;
+  --home-muted: rgba(134, 239, 172, 0.22);
   --out: #f87171;
   --out-muted: rgba(248, 113, 113, 0.2);
   --questionable: #fbbf24;
   --questionable-muted: rgba(251, 191, 36, 0.2);
-  --playing: #34d399;
-  --playing-muted: rgba(52, 211, 153, 0.2);
+  --playing: #86efac;
+  --playing-muted: rgba(134, 239, 172, 0.22);
   --doubtful: #fbbf24;
   --doubtful-muted: rgba(251, 191, 36, 0.2);
   --radius: 12px;
@@ -309,7 +309,7 @@ body {
   padding: 0.35rem 0.65rem;
   background: var(--away-muted);
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  border: 1px solid rgba(147, 197, 253, 0.35);
 }
 
 .matchup-header .team.home {
@@ -317,7 +317,7 @@ body {
   padding: 0.35rem 0.65rem;
   background: var(--home-muted);
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(52, 211, 153, 0.3);
+  border: 1px solid rgba(134, 239, 172, 0.35);
 }
 
 .matchup-header .at {
@@ -335,12 +335,12 @@ body {
 }
 
 .win-pct-bar .bar.away {
-  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+  background: linear-gradient(90deg, #7dd3fc, #93c5fd);
   transition: flex 0.3s ease;
 }
 
 .win-pct-bar .bar.home {
-  background: linear-gradient(90deg, #059669, #34d399);
+  background: linear-gradient(90deg, #6ee7b7, #86efac);
   transition: flex 0.3s ease;
 }
 
@@ -502,8 +502,8 @@ body {
 
 .badge.playing {
   background: var(--playing-muted);
-  color: #34d399;
-  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #86efac;
+  border: 1px solid rgba(134, 239, 172, 0.4);
 }
 
 .badge.questionable {

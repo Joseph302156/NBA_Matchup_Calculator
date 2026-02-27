@@ -1,10 +1,11 @@
 """
-Fetch upcoming games, team stats, recent form, injuries (nbainjuries), rest/B2B.
+Fetch upcoming games, team stats, recent form, injuries (ESPN primary, nbainjuries fallback), rest/B2B.
 """
 import time
 from datetime import datetime, timedelta
 
 import pandas as pd
+import requests
 
 from nba_api.stats.endpoints import (
     CommonTeamRoster,
@@ -331,21 +332,99 @@ def _team_name_to_id():
     return {t["full_name"]: t["id"] for t in static_teams.get_teams()}
 
 
+def _espn_team_id_to_nba_id():
+    """Map ESPN API team id -> nba_api team id. Fetches ESPN teams list once."""
+    nba_by_abbrev = {t["abbreviation"]: t["id"] for t in static_teams.get_teams()}
+    try:
+        r = requests.get(
+            "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams",
+            timeout=10,
+        )
+        r.raise_for_status()
+        data = r.json()
+    except Exception:
+        return {}
+    # Response can be: { "teams": [...] } or { "sports": [ { "leagues": [ { "teams": [...] } ] } ] }
+    teams_list = data.get("teams")
+    if not teams_list and "sports" in data and data["sports"]:
+        leagues = data["sports"][0].get("leagues") or []
+        if leagues:
+            teams_list = leagues[0].get("teams")
+    if not teams_list:
+        return {}
+    out = {}
+    for item in teams_list:
+        team = item.get("team", item) if isinstance(item, dict) else item
+        if not isinstance(team, dict):
+            continue
+        espn_id = team.get("id")
+        abbr = (team.get("abbreviation") or "").strip()
+        if espn_id is not None and abbr:
+            nba_id = nba_by_abbrev.get(abbr)
+            if nba_id is not None:
+                out[str(espn_id)] = nba_id
+    return out
+
+
+def get_injuries_espn():
+    """
+    Injury report from ESPN roster API. Each team roster includes athletes with
+    injuries[] (status + date). Returns dict team_id (nba_api id) -> list of
+    {'status': 'Out'|'Doubtful'|'Questionable', 'player_name': str}.
+    """
+    espn_to_nba = _espn_team_id_to_nba_id()
+    if not espn_to_nba:
+        return {}
+    by_team = {}
+    for espn_id_str, nba_id in espn_to_nba.items():
+        try:
+            time.sleep(0.15)
+            r = requests.get(
+                f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/{espn_id_str}/roster",
+                timeout=10,
+            )
+            r.raise_for_status()
+            data = r.json()
+        except Exception:
+            continue
+        athletes = data.get("athletes") or []
+        for ath in athletes:
+            injuries = ath.get("injuries") or []
+            if not injuries:
+                continue
+            full_name = (ath.get("fullName") or ath.get("displayName") or "").strip()
+            if not full_name:
+                continue
+            # Use first injury entry; status can be "Out", "Doubtful", "Questionable", "Day-To-Day", etc.
+            raw_status = (injuries[0].get("status") or "").strip()
+            if not raw_status:
+                continue
+            status = raw_status
+            if status.lower() in ("out", "out for season"):
+                status = "Out"
+            elif status.lower() in ("doubtful",):
+                status = "Doubtful"
+            else:
+                status = "Questionable"  # Questionable, Day-To-Day, etc.
+            by_team.setdefault(nba_id, []).append({"status": status, "player_name": full_name})
+    return by_team
+
+
 def get_injuries():
     """
-    Injury report via nbainjuries. Uses the most recent available report: tries
-    timestamps from now going backward (every 3 hours, up to 7 days) and returns
-    the first non-empty result. Returns dict team_id -> list of
+    Injury report: tries ESPN roster API first (no Java, reliable); if empty or error,
+    falls back to nbainjuries. Returns dict team_id -> list of
     {'status': 'Out'|'Doubtful'|'Questionable', 'player_name': str}.
-    If nbainjuries unavailable or no report found, returns {}.
     """
+    injuries = get_injuries_espn()
+    if injuries:
+        return injuries
     try:
         from nbainjuries import injury
     except Exception:
         return {}
     name_to_id = _team_name_to_id()
     now = datetime.utcnow()
-    # Step backward every 6 hours for up to 6 days; use first non-empty report (last made).
     step_hours = 6
     max_hours_back = 24 * 6
     data = []

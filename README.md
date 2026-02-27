@@ -11,7 +11,7 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Optional (for injury data): `pip install nbainjuries` and ensure Java 8+ is installed. Without it, the model still runs; injury counts are treated as 0.
+Optional (fallback injury source): `pip install nbainjuries` and Java 8+. Injuries are **primarily** from ESPN’s roster API (no Java needed); nbainjuries is used only if ESPN returns no data.
 
 ## Web app (full-stack)
 
@@ -51,7 +51,7 @@ python main.py --json       # machine-readable JSON
 | Recent form | TeamGameLog (last N games) | Win rate in last 10 games |
 | Home/away | Schedule | Home-court advantage (~2.5 pts) |
 | **Rest / back-to-back** | TeamGameLog last game date | B2B (0 rest): −2 pts; 2+ days rest: +0.5 pts |
-| **Injuries** | `nbainjuries` (optional) | Out/Questionable with **player names**; matched to roster so we know who is missing |
+| **Injuries** | **ESPN** roster API (primary), `nbainjuries` (fallback) | Out/Doubtful/Questionable by **player name**; matched to roster; no Java required for ESPN |
 | **Team ORtg/DRtg** | TeamEstimatedMetrics | E_OFF_RATING, E_DEF_RATING per team |
 | **Player stats** | CommonTeamRoster + LeagueDashPlayerStats (PerGame) | MIN, PTS, AST, REB, STL, BLK; injured players excluded from "available value" |
 | **Stat importance** | `src/analysis/stat_importance.py` | Correlation of team PTS/AST/REB/STL/BLK with W_PCT → weights for player contribution |

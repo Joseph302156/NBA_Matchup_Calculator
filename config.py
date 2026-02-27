@@ -1,0 +1,29 @@
+"""App config. Override with env vars if you add dotenv later."""
+from datetime import datetime
+
+def current_season():
+    """e.g. 2025-26 for season starting Oct 2025."""
+    now = datetime.now()
+    if now.month >= 10:
+        return f"{now.year}-{str(now.year + 1)[-2:]}"
+    return f"{now.year - 1}-{str(now.year)[-2:]}"
+
+# How many days ahead to consider "upcoming" games
+UPCOMING_DAYS = 3
+# Recent games for form (W/L record)
+RECENT_GAMES_N = 10
+# Refresh: run every N minutes when in daemon mode (future)
+REFRESH_MINUTES = 30
+# NBA.com can rate-limit; delay between heavy requests (seconds)
+REQUEST_DELAY = 0.6
+
+# Model: home court and form
+HOME_ADVANTAGE_PTS = 2.5
+RECENT_FORM_WEIGHT = 0.25
+# Rest / back-to-back
+REST_B2B_PENALTY_PTS = 2.0       # pts to subtract when team played yesterday (0 rest days)
+REST_EXTRA_BONUS_PTS = 0.5      # pts to add when team has 2+ days rest
+# Injuries (model): strength penalty per player
+INJURY_OUT_WEIGHT = 1.0         # full penalty for "Out"
+INJURY_QUESTIONABLE_WEIGHT = 0.4  # partial for "Questionable"
+INJURY_WEIGHT = 0.35            # multiplier: penalty = INJURY_WEIGHT * (out*1 + questionable*0.4)

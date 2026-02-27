@@ -1,0 +1,4 @@
+nba_api>=1.4.0
+pandas>=2.0.0
+requests>=2.28.0
+# nbainjuries>=1.0.0  # optional: injury data (requires Java 8+)

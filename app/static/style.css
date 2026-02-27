@@ -182,6 +182,8 @@ body {
   padding: 1.5rem 1.75rem;
   box-shadow: var(--shadow);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .game-card:hover {
@@ -290,6 +292,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
+  min-width: 0;
 }
 
 @media (max-width: 900px) {
@@ -301,6 +304,11 @@ body {
   }
 }
 
+.roster {
+  min-width: 0;
+  overflow: hidden;
+}
+
 .roster h4 {
   margin: 0 0 0.75rem;
   font-size: 0.9375rem;
@@ -310,18 +318,46 @@ body {
 
 .roster table {
   width: 100%;
+  min-width: 0;
   border-collapse: collapse;
   font-size: 0.8125rem;
   border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--border);
+  table-layout: fixed;
 }
 
 .roster th,
 .roster td {
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.5rem;
   text-align: left;
   border-bottom: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+/* Player name: take remaining space, truncate long names */
+.roster td:first-child,
+.roster th:first-child {
+  min-width: 0;
+  max-width: 35%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 0.5rem;
+}
+
+/* Pos & Status: compact */
+.roster th:nth-child(2),
+.roster td:nth-child(2) { width: 2.5em; text-align: center; }
+.roster th:nth-child(3),
+.roster td:nth-child(3) { width: 4.2em; }
+
+/* Stat columns: fixed narrow width, right-aligned numbers */
+.roster th:nth-child(n+4),
+.roster td:nth-child(n+4) {
+  width: 2.75em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .roster th {

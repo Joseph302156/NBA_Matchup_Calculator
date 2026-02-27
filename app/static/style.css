@@ -1,15 +1,34 @@
-/* NBA Win Probability — minimal, readable layout */
+/* NBA Win Probability — Notion / ChatGPT / tech-style UI */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  --bg: #0d1117;
-  --surface: #161b22;
-  --border: #30363d;
-  --text: #e6edf3;
-  --muted: #8b949e;
-  --away: #58a6ff;
-  --home: #3fb950;
-  --out: #f85149;
-  --questionable: #d29922;
-  --playing: #3fb950;
+  --bg: #fafafa;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --border-light: #f3f4f6;
+  --text: #111827;
+  --text-secondary: #6b7280;
+  --muted: #9ca3af;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --away: #0ea5e9;
+  --away-light: #e0f2fe;
+  --home: #10b981;
+  --home-light: #d1fae5;
+  --out: #ef4444;
+  --out-light: #fee2e2;
+  --questionable: #f59e0b;
+  --questionable-light: #fef3c7;
+  --playing: #10b981;
+  --playing-light: #d1fae5;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 9999px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
 }
 
 * {
@@ -17,52 +36,70 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   margin: 0;
   min-height: 100vh;
-  line-height: 1.5;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
 .header {
-  padding: 1.5rem 1rem;
+  background: var(--bg-elevated);
+  padding: 1.5rem 1.5rem 1.75rem;
   border-bottom: 1px solid var(--border);
   text-align: center;
+  box-shadow: var(--shadow);
 }
 
 .header h1 {
-  margin: 0 0 0.25rem;
-  font-size: 1.5rem;
+  margin: 0 0 0.35rem;
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
 }
 
 .tagline {
   margin: 0;
-  color: var(--muted);
-  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 400;
 }
 
 .back {
-  display: inline-block;
-  margin-top: 0.75rem;
-  color: var(--away);
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.875rem;
+  color: var(--primary);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .back:hover {
-  text-decoration: underline;
+  background: var(--primary-light);
+  color: var(--primary-hover);
+  text-decoration: none;
 }
 
 .main {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 1.5rem 1rem;
+  padding: 2rem 1.5rem;
 }
 
 .error {
   color: var(--out);
   margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--out-light);
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
 }
 
 .date-form {
@@ -71,95 +108,155 @@ body {
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 .date-form label {
   font-weight: 500;
+  color: var(--text);
+  font-size: 0.9375rem;
 }
 
 .date-form input[type="date"] {
-  padding: 0.5rem 0.75rem;
-  font-size: 1rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.9375rem;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
   color: var(--text);
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.date-form input[type="date"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .date-form button {
-  padding: 0.5rem 1.25rem;
-  font-size: 1rem;
-  background: var(--away);
-  color: var(--bg);
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.9375rem;
   font-weight: 500;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, transform 0.05s ease;
 }
 
 .date-form button:hover {
-  opacity: 0.9;
+  background: var(--primary-hover);
+}
+
+.date-form button:active {
+  transform: scale(0.98);
 }
 
 .no-games {
-  color: var(--muted);
-  font-size: 1.1rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  padding: 2rem;
+  text-align: center;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
 }
 
 .games {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.75rem;
 }
 
 .game-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.25rem;
+  border-radius: var(--radius);
+  padding: 1.5rem 1.75rem;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.game-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border);
 }
 
 .matchup-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
   flex-wrap: wrap;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
 }
 
-.matchup-header .team.away { color: var(--away); }
-.matchup-header .team.home { color: var(--home); }
-.matchup-header .at { color: var(--muted); }
+.matchup-header .team.away {
+  color: var(--away);
+  padding: 0.25rem 0.5rem;
+  background: var(--away-light);
+  border-radius: var(--radius-sm);
+}
+
+.matchup-header .team.home {
+  color: var(--home);
+  padding: 0.25rem 0.5rem;
+  background: var(--home-light);
+  border-radius: var(--radius-sm);
+}
+
+.matchup-header .at {
+  color: var(--muted);
+  font-weight: 500;
+}
 
 .win-pct-bar {
   display: flex;
-  height: 12px;
-  border-radius: 6px;
+  height: 10px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
-  margin-bottom: 0.25rem;
-  background: var(--border);
+  margin-bottom: 0.5rem;
+  background: var(--border-light);
 }
 
 .win-pct-bar .bar.away {
-  background: var(--away);
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+  transition: flex 0.3s ease;
 }
+
 .win-pct-bar .bar.home {
-  background: var(--home);
+  background: linear-gradient(90deg, #10b981, #34d399);
+  transition: flex 0.3s ease;
 }
 
 .win-pct-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.875rem;
+  font-weight: 500;
 }
 
 .pick {
-  margin: 0 0 1rem;
-  font-size: 1rem;
+  margin: 0 0 1.25rem;
+  font-size: 0.9375rem;
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+  background: var(--primary-light);
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  font-weight: 500;
 }
 
 .ratings {
@@ -169,15 +266,24 @@ body {
   margin-bottom: 1.5rem;
 }
 
+.team-ratings {
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+
 .team-ratings h4 {
   margin: 0 0 0.25rem;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .team-ratings p {
   margin: 0;
-  font-size: 0.9rem;
-  color: var(--muted);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
 }
 
 .rosters {
@@ -197,74 +303,106 @@ body {
 
 .roster h4 {
   margin: 0 0 0.75rem;
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .roster table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
 }
 
 .roster th,
 .roster td {
-  padding: 0.35rem 0.5rem;
+  padding: 0.5rem 0.75rem;
   text-align: left;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .roster th {
-  color: var(--muted);
+  background: var(--bg);
+  color: var(--text-secondary);
   font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.roster tbody tr {
+  transition: background 0.1s ease;
+}
+
+.roster tbody tr:hover {
+  background: var(--bg);
+}
+
+.roster tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .roster tr.status-out {
-  opacity: 0.6;
+  opacity: 0.65;
+}
+
+.roster tr.status-out:hover {
+  opacity: 0.85;
 }
 
 .roster tr.status-questionable {
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
 .badge {
   display: inline-block;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .badge.playing {
-  background: rgba(63, 185, 80, 0.2);
-  color: var(--playing);
+  background: var(--playing-light);
+  color: #047857;
 }
 
 .badge.questionable {
-  background: rgba(210, 153, 34, 0.2);
-  color: var(--questionable);
+  background: var(--questionable-light);
+  color: #b45309;
 }
 
 .badge.out {
-  background: rgba(248, 81, 73, 0.2);
-  color: var(--out);
+  background: var(--out-light);
+  color: #b91c1c;
 }
 
 .injury-label {
-  margin: 0.75rem 0 0.25rem;
-  font-size: 0.85rem;
-  color: var(--muted);
+  margin: 0.875rem 0 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .injury-list {
   margin: 0;
   padding-left: 1.25rem;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
 }
 
 .footer {
-  padding: 1rem;
+  padding: 1.25rem 1.5rem;
   border-top: 1px solid var(--border);
   text-align: center;
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
+  background: var(--bg-elevated);
+  margin-top: 2rem;
 }

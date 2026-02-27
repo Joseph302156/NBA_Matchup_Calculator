@@ -86,6 +86,55 @@ def get_upcoming_games(days_ahead=UPCOMING_DAYS):
     return out[: 50]  # cap
 
 
+def get_games_for_date(target_date):
+    """
+    Return games on a single date. target_date: datetime.date or 'YYYY-MM-DD' string.
+    Includes scheduled (1) and in-progress (2). Same structure as get_upcoming_games.
+    """
+    if hasattr(target_date, "strftime"):
+        date_str = target_date.strftime("%Y-%m-%d")
+    else:
+        date_str = str(target_date)[:10]
+    season = _season()
+    s = ScheduleLeagueV2(season=season)
+    time.sleep(REQUEST_DELAY)
+    df = s.get_data_frames()[0]
+    if df is None or df.empty:
+        return []
+
+    df = df[df["gameStatus"].isin([1, 2, 3])].copy()  # scheduled, in progress, or final
+
+    out = []
+    for _, row in df.iterrows():
+        est = row.get("gameDateEst") or row.get("gameDateTimeEst")
+        if pd.isna(est):
+            continue
+        try:
+            d = pd.to_datetime(est).date()
+            row_date = d.strftime("%Y-%m-%d")
+        except Exception:
+            continue
+        if row_date != date_str:
+            continue
+        out.append({
+            "game_id": row.get("gameId"),
+            "game_date_est": row.get("gameDateEst") or row.get("gameDateTimeEst"),
+            "game_status": row.get("gameStatus"),
+            "home_team_id": int(row["homeTeam_teamId"]),
+            "away_team_id": int(row["awayTeam_teamId"]),
+            "home_team_name": row["homeTeam_teamName"],
+            "away_team_name": row["awayTeam_teamName"],
+            "home_tricode": row["homeTeam_teamTricode"],
+            "away_tricode": row["awayTeam_teamTricode"],
+            "home_wins": int(row.get("homeTeam_wins", 0) or 0),
+            "home_losses": int(row.get("homeTeam_losses", 0) or 0),
+            "away_wins": int(row.get("awayTeam_wins", 0) or 0),
+            "away_losses": int(row.get("awayTeam_losses", 0) or 0),
+        })
+    out.sort(key=lambda x: (x["game_date_est"] or ""))
+    return out
+
+
 def get_team_season_stats():
     """
     LeagueDashTeamStats for current season. Returns dict team_id -> { PTS, OPP_PTS, W, L, ... }.

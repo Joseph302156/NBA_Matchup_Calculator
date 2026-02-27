@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Predictions — {{ date_display }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>NBA Win Probability</h1>
+    <p class="tagline">Predictions for <strong>{{ date_display }}</strong></p>
+    <a href="/" class="back">← Pick another date</a>
+  </header>
+
+  <main class="main">
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
+    {% if not games %}
+    <p class="no-games">No games found for this date.</p>
+    {% else %}
+    <section class="games">
+      {% for game in games %}
+      <article class="game-card">
+        <div class="matchup-header">
+          <span class="team away">{{ game.away_team_name }} ({{ game.away_tricode }})</span>
+          <span class="at">@</span>
+          <span class="team home">{{ game.home_team_name }} ({{ game.home_tricode }})</span>
+        </div>
+
+        <div class="win-pct-bar">
+          <div class="bar away" style="flex: 0 0 {{ (game.win_pct_away * 100) }}%"></div>
+          <div class="bar home" style="flex: 0 0 {{ (game.win_pct_home * 100) }}%"></div>
+        </div>
+        <div class="win-pct-labels">
+          <span>Away {{ (game.win_pct_away * 100) | round(1) }}%</span>
+          <span>Home {{ (game.win_pct_home * 100) | round(1) }}%</span>
+        </div>
+        <p class="pick">Pick: <strong>{{ game.pick }}</strong> ({{ (game.pick_win_pct * 100) | round(1) }}%)</p>
+
+        <div class="ratings">
+          <div class="team-ratings away">
+            <h4>{{ game.away_tricode }}</h4>
+            <p>ORtg {{ game.away_ortg }} · DRtg {{ game.away_drtg }}</p>
+          </div>
+          <div class="team-ratings home">
+            <h4>{{ game.home_tricode }}</h4>
+            <p>ORtg {{ game.home_ortg }} · DRtg {{ game.home_drtg }}</p>
+          </div>
+        </div>
+
+        <div class="rosters">
+          <div class="roster away">
+            <h4>{{ game.away_tricode }} roster & stats</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Pos</th>
+                  <th>Status</th>
+                  <th>MIN</th>
+                  <th>PTS</th>
+                  <th>AST</th>
+                  <th>REB</th>
+                  <th>STL</th>
+                  <th>BLK</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in game.away_roster %}
+                <tr class="status-{{ p.status | lower }}">
+                  <td>{{ p.player_name }}</td>
+                  <td>{{ p.position }}</td>
+                  <td><span class="badge {{ p.status | lower }}">{{ p.status }}</span></td>
+                  <td>{{ (p.MIN | round(1)) }}</td>
+                  <td>{{ (p.PTS | round(1)) }}</td>
+                  <td>{{ (p.AST | round(1)) }}</td>
+                  <td>{{ (p.REB | round(1)) }}</td>
+                  <td>{{ (p.STL | round(1)) }}</td>
+                  <td>{{ (p.BLK | round(1)) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% if game.away_injuries %}
+            <p class="injury-label">Injury report:</p>
+            <ul class="injury-list">
+              {% for inv in game.away_injuries %}
+              <li>{{ inv.player_name }} — <span class="badge {{ inv.status | lower }}">{{ inv.status }}</span></li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+          <div class="roster home">
+            <h4>{{ game.home_tricode }} roster & stats</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Pos</th>
+                  <th>Status</th>
+                  <th>MIN</th>
+                  <th>PTS</th>
+                  <th>AST</th>
+                  <th>REB</th>
+                  <th>STL</th>
+                  <th>BLK</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in game.home_roster %}
+                <tr class="status-{{ p.status | lower }}">
+                  <td>{{ p.player_name }}</td>
+                  <td>{{ p.position }}</td>
+                  <td><span class="badge {{ p.status | lower }}">{{ p.status }}</span></td>
+                  <td>{{ (p.MIN | round(1)) }}</td>
+                  <td>{{ (p.PTS | round(1)) }}</td>
+                  <td>{{ (p.AST | round(1)) }}</td>
+                  <td>{{ (p.REB | round(1)) }}</td>
+                  <td>{{ (p.STL | round(1)) }}</td>
+                  <td>{{ (p.BLK | round(1)) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% if game.home_injuries %}
+            <p class="injury-label">Injury report:</p>
+            <ul class="injury-list">
+              {% for inv in game.home_injuries %}
+              <li>{{ inv.player_name }} — <span class="badge {{ inv.status | lower }}">{{ inv.status }}</span></li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+  </main>
+
+  <footer class="footer">
+    <p>Data from NBA.com. Predictions are for entertainment only.</p>
+  </footer>
+</body>
+</html>

@@ -13,9 +13,17 @@ pip install -r requirements.txt
 
 Optional (for injury data): `pip install nbainjuries` and ensure Java 8+ is installed. Without it, the model still runs; injury counts are treated as 0.
 
-## Run
+## Web app (full-stack)
 
-From project root:
+Pick a date and view matchup predictions with rosters, statlines, injury report, ORtg/DRtg, and win %.
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Then open http://127.0.0.1:8000 — choose a date and click **Calculate predictions**. Results show each game: away @ home, win % bar, pick, team ORtg/DRtg, full roster with MIN/PTS/AST/REB/STL/BLK and Playing/Out/Questionable status, and injury report.
+
+## Run (CLI)
 
 ```bash
 python main.py              # next 3 days (config.UPCOMING_DAYS)
@@ -57,12 +65,17 @@ python main.py --json       # machine-readable JSON
 ## Project layout
 
 ```
-config.py           # season, UPCOMING_DAYS, RECENT_GAMES_N, REFRESH_MINUTES
+config.py           # season, UPCOMING_DAYS, REFRESH_MINUTES, model weights
 main.py             # CLI: fetch → predict → print/JSON
+app/
+  main.py           # FastAPI: / (date picker), /results (predictions for date)
+  templates/        # index.html, results.html
+  static/style.css  # dark theme, game cards, rosters, badges
 src/
   data/fetchers.py  # games, team stats, roster, player stats, ORtg/DRtg, injuries, rest
-  analysis/stat_importance.py  # correlation-based weights for PTS/AST/REB/STL/BLK
-  model.py          # predict_game(..., ortg_drtg, available_value_home/away)
+  web_pipeline.py   # build_predictions_for_date() for web
+  analysis/stat_importance.py
+  model.py
 requirements.txt
 .venv/
 ```

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA Win Probability</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>NBA Win Probability</h1>
+    <p class="tagline">Pick a date to see matchup predictions, rosters, and win percentages.</p>
+  </header>
+
+  <main class="main">
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <form action="/results" method="post" class="date-form">
+      <label for="game_date">Game date</label>
+      <input
+        type="date"
+        id="game_date"
+        name="game_date"
+        value="{{ today.isoformat() }}"
+        min="{{ min_date.isoformat() }}"
+        max="{{ max_date.isoformat() }}"
+        required
+      />
+      <button type="submit">Calculate predictions</button>
+    </form>
+  </main>
+
+  <footer class="footer">
+    <p>Data from NBA.com via nba_api. Predictions are for entertainment only.</p>
+  </footer>
+</body>
+</html>

@@ -84,6 +84,7 @@ body {
 .chat-panel {
   flex: 0 0 calc(30% - 0.15in);
   min-width: 240px;
+  margin-left: -0.5in;
   max-height: 840px;
   align-self: flex-start;
   display: flex;

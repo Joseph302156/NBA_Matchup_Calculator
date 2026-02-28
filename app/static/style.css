@@ -77,10 +77,13 @@ body {
   flex: 0 0 30%;
   width: 30%;
   min-width: 240px;
+  max-height: 420px;
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
   background: var(--surface);
-  border-left: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 

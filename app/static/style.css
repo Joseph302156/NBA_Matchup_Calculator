@@ -140,10 +140,10 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
-  gap: 2rem;
+  gap: 1in;
   width: 100%;
 }
-.roster { width: fit-content; max-width: 520px; }
+.roster { width: fit-content; max-width: 520px; flex-shrink: 0; }
 .roster h4 { margin: 0 0 0.75rem; font-size: 0.9375rem; font-weight: 600; color: var(--text); text-align: center; }
 .roster table {
   width: 100%;

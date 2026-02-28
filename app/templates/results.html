@@ -21,9 +21,17 @@
     {% if not games %}
     <p class="no-games">No games found for this date.</p>
     {% else %}
-    <section class="games">
+    <nav class="matchup-strip" aria-label="Select matchup">
       {% for game in games %}
-      <article class="game-card">
+      <button type="button" class="matchup-btn" data-game-index="{{ loop.index0 }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
+        {{ game.away_tricode }} @ {{ game.home_tricode }}
+      </button>
+      {% endfor %}
+    </nav>
+
+    <section class="games" id="games-container">
+      {% for game in games %}
+      <article class="game-card" id="game-card-{{ loop.index0 }}" data-game-index="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
         <div class="matchup-header">
           <span class="team away">{{ game.away_team_name }} ({{ game.away_tricode }})</span>
           <span class="at">@</span>
@@ -138,6 +146,27 @@
       </article>
       {% endfor %}
     </section>
+
+    <script>
+      (function() {
+        var container = document.getElementById('games-container');
+        var cards = container.querySelectorAll('.game-card');
+        var buttons = document.querySelectorAll('.matchup-btn');
+        function showGame(index) {
+          cards.forEach(function(card) {
+            card.hidden = parseInt(card.getAttribute('data-game-index'), 10) !== index;
+          });
+          buttons.forEach(function(btn) {
+            btn.setAttribute('aria-pressed', btn.getAttribute('data-game-index') === String(index));
+          });
+        }
+        buttons.forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            showGame(parseInt(btn.getAttribute('data-game-index'), 10));
+          });
+        });
+      })();
+    </script>
     {% endif %}
   </main>
 

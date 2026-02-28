@@ -62,6 +62,8 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 2rem 2.25rem;
+  margin-left: 0.5in;
+  margin-right: 0.5in;
   box-shadow: var(--shadow);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
   display: flex;
@@ -238,5 +240,5 @@ body {
   .rosters { flex-direction: column; align-items: center; }
   .roster { width: 100%; max-width: 520px; }
   .ratings { grid-template-columns: 1fr; }
-  .game-card { padding: 2rem 1.5rem; }
+  .game-card { padding: 2rem 1.5rem; margin-left: 0; margin-right: 0; }
 }

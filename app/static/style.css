@@ -70,22 +70,20 @@ body {
   display: flex;
   min-height: 0;
   overflow: hidden;
-  gap: 0;
+  gap: 0.5in;
 }
 
 .results-panel {
-  flex: 0 0 65%;
-  width: 65%;
+  flex: 0 0 calc(70% - 0.35in);
   min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 0.5in;
+  padding-right: 0;
 }
 
 .chat-panel {
-  flex: 0 0 35%;
-  width: 35%;
-  min-width: 280px;
+  flex: 0 0 calc(30% - 0.15in);
+  min-width: 240px;
   max-height: 840px;
   align-self: flex-start;
   display: flex;

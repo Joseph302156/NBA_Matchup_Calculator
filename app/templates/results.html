@@ -145,72 +145,46 @@
         </div>
 
         {% if game.team_comparison %}
-        <div class="comparison-and-chart">
-          <section class="team-comparison">
-            <h4 class="team-comparison__title">Team comparison</h4>
-            <div class="team-comparison__teams">
-              <span class="team-comparison__label team away">{{ game.away_tricode }}</span>
-              <span></span>
-              <span class="team-comparison__label team home">{{ game.home_tricode }}</span>
-            </div>
-            {% set tc = game.team_comparison %}
-            {% set stat_rows = [
-              ('PTS', 'PTS'),
-              ('DRtg', 'Def. rating'),
-              ('FG_PCT', 'FG%'),
-              ('FG3_PCT', '3P%'),
-              ('FT_PCT', 'FT%'),
-              ('TOV', 'TOV'),
-              ('REB', 'REB'),
-              ('AST', 'AST'),
-              ('STL', 'STL'),
-              ('BLK', 'BLK'),
-              ('PF', 'PF'),
-            ] %}
-            <div class="team-comparison__table">
-              {% for stat_key, label in stat_rows %}
-              {% set away_val = tc.away.get(stat_key) %}
-              {% set home_val = tc.home.get(stat_key) %}
-              {% set bar = tc.bars.get(stat_key, {}) %}
-              <div class="team-comparison__row">
-                <span class="team-comparison__val away">{{ away_val if away_val is not none else '—' }}</span>
-                <div class="team-comparison__cell">
-                  <span class="team-comparison__stat-name">{{ label }}</span>
-                  <div class="team-comparison__bar">
-                    <span class="team-comparison__bar-segment away" style="flex: 0 0 {{ bar.get('away_pct', 50) }}%"></span>
-                    <span class="team-comparison__bar-segment home" style="flex: 0 0 {{ bar.get('home_pct', 50) }}%"></span>
-                  </div>
+        <section class="team-comparison">
+          <h4 class="team-comparison__title">Team comparison</h4>
+          <div class="team-comparison__teams">
+            <span class="team-comparison__label team away">{{ game.away_tricode }}</span>
+            <span></span>
+            <span class="team-comparison__label team home">{{ game.home_tricode }}</span>
+          </div>
+          {% set tc = game.team_comparison %}
+          {% set stat_rows = [
+            ('PTS', 'PTS'),
+            ('DRtg', 'Def. rating'),
+            ('FG_PCT', 'FG%'),
+            ('FG3_PCT', '3P%'),
+            ('FT_PCT', 'FT%'),
+            ('TOV', 'TOV'),
+            ('REB', 'REB'),
+            ('AST', 'AST'),
+            ('STL', 'STL'),
+            ('BLK', 'BLK'),
+            ('PF', 'PF'),
+          ] %}
+          <div class="team-comparison__table">
+            {% for stat_key, label in stat_rows %}
+            {% set away_val = tc.away.get(stat_key) %}
+            {% set home_val = tc.home.get(stat_key) %}
+            {% set bar = tc.bars.get(stat_key, {}) %}
+            <div class="team-comparison__row">
+              <span class="team-comparison__val away">{{ away_val if away_val is not none else '—' }}</span>
+              <div class="team-comparison__cell">
+                <span class="team-comparison__stat-name">{{ label }}</span>
+                <div class="team-comparison__bar">
+                  <span class="team-comparison__bar-segment away" style="flex: 0 0 {{ bar.get('away_pct', 50) }}%"></span>
+                  <span class="team-comparison__bar-segment home" style="flex: 0 0 {{ bar.get('home_pct', 50) }}%"></span>
                 </div>
-                <span class="team-comparison__val home">{{ home_val if home_val is not none else '—' }}</span>
               </div>
-              {% endfor %}
+              <span class="team-comparison__val home">{{ home_val if home_val is not none else '—' }}</span>
             </div>
-          </section>
-          {% if game.quarterly_chart %}
-          <section class="quarterly-chart" aria-label="Average points by quarter">
-            <h4 class="quarterly-chart__title">Avg points by quarter</h4>
-            <div class="quarterly-chart__legend">
-              <span class="quarterly-chart__legend-item away">{{ game.away_tricode }}</span>
-              <span class="quarterly-chart__legend-item home">{{ game.home_tricode }}</span>
-            </div>
-            <div class="quarterly-chart__svg-wrap">
-              <svg class="quarterly-chart__svg" viewBox="0 0 200 125" preserveAspectRatio="xMidYMid meet" role="img">
-                <title>Quarters 1–4: {{ game.away_tricode }} and {{ game.home_tricode }} average points</title>
-                <line x1="20" y1="20" x2="20" y2="100" stroke="var(--border-light)" stroke-width="1"/>
-                <line x1="20" y1="100" x2="170" y2="100" stroke="var(--border-light)" stroke-width="1"/>
-                <text x="8" y="102" font-size="9" fill="var(--text-secondary)" text-anchor="middle">{{ game.quarterly_chart.min_pts }}</text>
-                <text x="8" y="22" font-size="9" fill="var(--text-secondary)" text-anchor="middle">{{ game.quarterly_chart.max_pts }}</text>
-                <text x="20" y="114" font-size="9" fill="var(--text-secondary)" text-anchor="middle">Q1</text>
-                <text x="70" y="114" font-size="9" fill="var(--text-secondary)" text-anchor="middle">Q2</text>
-                <text x="120" y="114" font-size="9" fill="var(--text-secondary)" text-anchor="middle">Q3</text>
-                <text x="170" y="114" font-size="9" fill="var(--text-secondary)" text-anchor="middle">Q4</text>
-                <path d="{{ game.quarterly_chart.path_away }}" fill="none" stroke="var(--away)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="{{ game.quarterly_chart.path_home }}" fill="none" stroke="var(--home)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          </section>
-          {% endif %}
-        </div>
+            {% endfor %}
+          </div>
+        </section>
         {% endif %}
       </article>
       {% endfor %}

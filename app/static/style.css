@@ -229,22 +229,12 @@ body {
 .injury-list { margin: 0; padding-left: 1.25rem; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.7; }
 
 /* Team comparison (after rosters) */
-.comparison-and-chart {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  align-items: flex-start;
+.team-comparison {
   width: 100%;
-  max-width: 1040px;
+  max-width: 520px;
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 2px solid var(--border);
-}
-
-.team-comparison {
-  flex: 1 1 320px;
-  min-width: 0;
-  max-width: 520px;
 }
 
 .team-comparison__title {
@@ -317,45 +307,6 @@ body {
 
 .team-comparison__bar-segment.away { background: var(--away); min-width: 4px; }
 .team-comparison__bar-segment.home { background: var(--home); min-width: 4px; }
-
-/* Quarterly line chart (right of team comparison) */
-.quarterly-chart {
-  flex: 1 1 320px;
-  min-width: 0;
-  max-width: 480px;
-}
-
-.quarterly-chart__title {
-  margin: 0 0 0.5rem;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--text);
-  text-align: center;
-}
-
-.quarterly-chart__legend {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.quarterly-chart__legend-item.away { color: var(--away); }
-.quarterly-chart__legend-item.home { color: var(--home); }
-
-.quarterly-chart__svg-wrap {
-  width: 100%;
-  max-width: 320px;
-  margin: 0 auto;
-}
-
-.quarterly-chart__svg {
-  width: 100%;
-  height: auto;
-  display: block;
-}
 
 .footer {
   padding: 1.25rem 1.5rem;
@@ -449,9 +400,6 @@ body {
 .date-form button:hover { opacity: 0.9; }
 
 @media (max-width: 900px) {
-  .comparison-and-chart { flex-direction: column; }
-  .team-comparison { max-width: 100%; }
-  .quarterly-chart { max-width: 100%; }
   .matchup-strip {
     overflow-x: auto;
     flex-wrap: nowrap;

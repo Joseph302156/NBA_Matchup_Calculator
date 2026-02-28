@@ -155,42 +155,6 @@ def build_predictions_for_date(target_date):
         home_ts = team_stats.get(hid, {})
         away_ts = team_stats.get(aid, {})
 
-        # Average points per quarter (estimated from season PPG; typical Q1–Q4 distribution)
-        def _quarterly_pts(ppg):
-            if ppg is None:
-                ppg = 0
-            try:
-                ppg = float(ppg)
-            except (TypeError, ValueError):
-                ppg = 0
-            return [
-                round(ppg * 0.27, 1),
-                round(ppg * 0.28, 1),
-                round(ppg * 0.27, 1),
-                round(ppg * 0.18, 1),
-            ]
-        quarterly_pts = {
-            "away": _quarterly_pts(away_ts.get("PTS")),
-            "home": _quarterly_pts(home_ts.get("PTS")),
-        }
-
-        # Chart coords for quarterly line graph (SVG): x = 20, 70, 120, 170; y scaled to 10–90
-        all_q = quarterly_pts["away"] + quarterly_pts["home"]
-        max_q = max(all_q) if all_q else 30
-        min_q = min(all_q) if all_q else 20
-        range_q = max_q - min_q if (max_q - min_q) >= 0.1 else 1
-        x_vals = [20, 70, 120, 170]
-        y_away = [100 - (p - min_q) / range_q * 80 for p in quarterly_pts["away"]]
-        y_home = [100 - (p - min_q) / range_q * 80 for p in quarterly_pts["home"]]
-        path_away = "M " + " L ".join(f"{x_vals[i]} {y_away[i]:.1f}" for i in range(4))
-        path_home = "M " + " L ".join(f"{x_vals[i]} {y_home[i]:.1f}" for i in range(4))
-        quarterly_chart = {
-            "path_away": path_away,
-            "path_home": path_home,
-            "max_pts": round(max_q, 1),
-            "min_pts": round(min_q, 1),
-        }
-
         games_payload.append({
             "game_id": g["game_id"],
             "game_date_est": g["game_date_est"],
@@ -212,8 +176,6 @@ def build_predictions_for_date(target_date):
             "win_pct_home": round(win_home, 3),
             "pick": pick_team,
             "pick_win_pct": round(pick_pct, 3),
-            "quarterly_pts": quarterly_pts,
-            "quarterly_chart": quarterly_chart,
             "team_comparison": {
                 "away": {
                     "PTS": away_ts.get("PTS"),

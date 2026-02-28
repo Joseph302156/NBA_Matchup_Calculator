@@ -86,7 +86,7 @@ body {
   min-width: 240px;
   margin-left: -0.5in;
   margin-right: calc(0.5in);
-  max-height: 840px;
+  max-height: 2100px;
   align-self: flex-start;
   display: flex;
   flex-direction: column;

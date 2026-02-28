@@ -86,7 +86,7 @@ body {
   flex: 0 0 30%;
   width: 30%;
   min-width: 240px;
-  max-height: 420px;
+  max-height: 840px;
   align-self: flex-start;
   display: flex;
   flex-direction: column;

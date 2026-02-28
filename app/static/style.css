@@ -231,14 +231,14 @@ body {
 /* Team comparison (after rosters) */
 .team-comparison {
   width: 100%;
-  max-width: 480px;
+  max-width: 520px;
   margin-top: 2rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--border);
 }
 
 .team-comparison__title {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.75rem;
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text);
@@ -247,10 +247,10 @@ body {
 
 .team-comparison__teams {
   display: grid;
-  grid-template-columns: 2.5rem 1fr 2.5rem;
-  gap: 0.5rem;
+  grid-template-columns: 3.5rem 1fr 3.5rem;
+  gap: 0.75rem;
   margin-bottom: 0.75rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   align-items: center;
 }
@@ -261,21 +261,22 @@ body {
 .team-comparison__table {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
 .team-comparison__row {
   display: grid;
-  grid-template-columns: 2.5rem 1fr 2.5rem;
+  grid-template-columns: 3.5rem 1fr 3.5rem;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
 }
 
 .team-comparison__val {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
 }
 
 .team-comparison__val.away { text-align: right; }
@@ -284,27 +285,28 @@ body {
 .team-comparison__cell {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.35rem;
 }
 
 .team-comparison__stat-name {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  font-weight: 500;
   color: var(--text-secondary);
   text-align: center;
 }
 
 .team-comparison__bar {
   display: flex;
-  height: 6px;
+  height: 8px;
   border-radius: var(--radius-pill);
   overflow: hidden;
   background: var(--bg-elevated);
 }
 
-.team-comparison__bar-segment.away { background: var(--away); min-width: 2px; }
-.team-comparison__bar-segment.home { background: var(--home); min-width: 2px; }
+.team-comparison__bar-segment.away { background: var(--away); min-width: 4px; }
+.team-comparison__bar-segment.home { background: var(--home); min-width: 4px; }
 
 .footer {
   padding: 1.25rem 1.5rem;

@@ -140,7 +140,7 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
-  gap: 1in;
+  gap: 0.5in;
   width: 100%;
 }
 .roster { width: fit-content; max-width: 520px; flex-shrink: 0; }

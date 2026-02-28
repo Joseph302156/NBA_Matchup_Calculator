@@ -228,6 +228,84 @@ body {
 .injury-label { margin: 0.875rem 0 0.35rem; font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary); text-align: left; }
 .injury-list { margin: 0; padding-left: 1.25rem; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.7; }
 
+/* Team comparison (after rosters) */
+.team-comparison {
+  width: 100%;
+  max-width: 480px;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.team-comparison__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+}
+
+.team-comparison__teams {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr 2.5rem;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  align-items: center;
+}
+
+.team-comparison__teams .team.away { text-align: right; color: var(--away); }
+.team-comparison__teams .team.home { text-align: left; color: var(--home); }
+
+.team-comparison__table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.team-comparison__row {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.team-comparison__val {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.team-comparison__val.away { text-align: right; }
+.team-comparison__val.home { text-align: left; }
+
+.team-comparison__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.team-comparison__stat-name {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.team-comparison__bar {
+  display: flex;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.team-comparison__bar-segment.away { background: var(--away); min-width: 2px; }
+.team-comparison__bar-segment.home { background: var(--home); min-width: 2px; }
+
 .footer {
   padding: 1.25rem 1.5rem;
   border-top: 1px solid var(--border);

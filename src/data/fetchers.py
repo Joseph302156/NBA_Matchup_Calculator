@@ -139,7 +139,8 @@ def get_games_for_date(target_date):
 
 def get_team_season_stats():
     """
-    LeagueDashTeamStats for current season. Returns dict team_id -> { PTS, OPP_PTS, W, L, ... }.
+    LeagueDashTeamStats for current season. Returns dict team_id -> per-game and percentage stats
+    for team comparison: PTS, OPP_PTS (if available), FG_PCT, FG3_PCT, FT_PCT, REB, AST, STL, BLK, TOV, PF.
     """
     season = _season()
     e = LeagueDashTeamStats(season=season)
@@ -152,13 +153,29 @@ def get_team_season_stats():
         tid = int(row["TEAM_ID"])
         gp = int(row.get("GP", 1)) or 1
         pts = float(row.get("PTS", 0))
-        by_id[tid] = {
-            "PTS": pts / gp,
+        out = {
+            "PTS": round(pts / gp, 1),
             "PLUS_MINUS": float(row.get("PLUS_MINUS", 0)) / gp,
             "W": int(row.get("W", 0)),
             "L": int(row.get("L", 0)),
             "GP": gp,
         }
+        # Per-game totals (API returns season totals)
+        for key in ("REB", "AST", "STL", "BLK", "TOV", "PF"):
+            total = float(row.get(key, 0))
+            out[key] = round(total / gp, 1)
+        # Percentages (usually 0–1 or already percentage)
+        for key in ("FG_PCT", "FG3_PCT", "FT_PCT"):
+            val = float(row.get(key, 0))
+            if val <= 1 and val != 0:
+                out[key] = round(val * 100, 1)
+            else:
+                out[key] = round(val, 1)
+        # Opponent PTS per game if column exists (e.g. from another source or same df)
+        opp_pts = row.get("OPP_PTS") or row.get("OPP_PTS_PER_GAME")
+        if opp_pts is not None:
+            out["OPP_PTS"] = round(float(opp_pts) / gp if float(opp_pts) > 100 else float(opp_pts), 1)
+        by_id[tid] = out
     return by_id
 
 

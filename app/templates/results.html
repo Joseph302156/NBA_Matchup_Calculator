@@ -143,6 +143,49 @@
             {% endif %}
           </div>
         </div>
+
+        {% if game.team_comparison %}
+        <section class="team-comparison">
+          <h4 class="team-comparison__title">Team comparison</h4>
+          <div class="team-comparison__teams">
+            <span class="team-comparison__label team away">{{ game.away_tricode }}</span>
+            <span></span>
+            <span class="team-comparison__label team home">{{ game.home_tricode }}</span>
+          </div>
+          {% set tc = game.team_comparison %}
+          {% set stat_rows = [
+            ('PTS', 'PTS'),
+            ('DRtg', 'Def. rating'),
+            ('FG_PCT', 'FG%'),
+            ('FG3_PCT', '3P%'),
+            ('FT_PCT', 'FT%'),
+            ('TOV', 'TOV'),
+            ('REB', 'REB'),
+            ('AST', 'AST'),
+            ('STL', 'STL'),
+            ('BLK', 'BLK'),
+            ('PF', 'PF'),
+          ] %}
+          <div class="team-comparison__table">
+            {% for stat_key, label in stat_rows %}
+            {% set away_val = tc.away.get(stat_key) %}
+            {% set home_val = tc.home.get(stat_key) %}
+            {% set bar = tc.bars.get(stat_key, {}) %}
+            <div class="team-comparison__row">
+              <span class="team-comparison__val away">{{ away_val if away_val is not none else '—' }}</span>
+              <div class="team-comparison__cell">
+                <span class="team-comparison__stat-name">{{ label }}</span>
+                <div class="team-comparison__bar">
+                  <span class="team-comparison__bar-segment away" style="flex: 0 0 {{ bar.get('away_pct', 50) }}%"></span>
+                  <span class="team-comparison__bar-segment home" style="flex: 0 0 {{ bar.get('home_pct', 50) }}%"></span>
+                </div>
+              </div>
+              <span class="team-comparison__val home">{{ home_val if home_val is not none else '—' }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+        {% endif %}
       </article>
       {% endfor %}
     </section>

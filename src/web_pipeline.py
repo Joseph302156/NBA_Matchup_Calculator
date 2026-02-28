@@ -152,6 +152,9 @@ def build_predictions_for_date(target_date):
         home_od = ortg_drtg.get(hid, {})
         away_od = ortg_drtg.get(aid, {})
 
+        home_ts = team_stats.get(hid, {})
+        away_ts = team_stats.get(aid, {})
+
         games_payload.append({
             "game_id": g["game_id"],
             "game_date_est": g["game_date_est"],
@@ -173,7 +176,54 @@ def build_predictions_for_date(target_date):
             "win_pct_home": round(win_home, 3),
             "pick": pick_team,
             "pick_win_pct": round(pick_pct, 3),
+            "team_comparison": {
+                "away": {
+                    "PTS": away_ts.get("PTS"),
+                    "DRtg": round(float(away_od.get("E_DEF_RATING") or 0), 1),
+                    "FG_PCT": away_ts.get("FG_PCT"),
+                    "FG3_PCT": away_ts.get("FG3_PCT"),
+                    "FT_PCT": away_ts.get("FT_PCT"),
+                    "TOV": away_ts.get("TOV"),
+                    "REB": away_ts.get("REB"),
+                    "AST": away_ts.get("AST"),
+                    "STL": away_ts.get("STL"),
+                    "BLK": away_ts.get("BLK"),
+                    "PF": away_ts.get("PF"),
+                },
+                "home": {
+                    "PTS": home_ts.get("PTS"),
+                    "DRtg": round(float(home_od.get("E_DEF_RATING") or 0), 1),
+                    "FG_PCT": home_ts.get("FG_PCT"),
+                    "FG3_PCT": home_ts.get("FG3_PCT"),
+                    "FT_PCT": home_ts.get("FT_PCT"),
+                    "TOV": home_ts.get("TOV"),
+                    "REB": home_ts.get("REB"),
+                    "AST": home_ts.get("AST"),
+                    "STL": home_ts.get("STL"),
+                    "BLK": home_ts.get("BLK"),
+                    "PF": home_ts.get("PF"),
+                },
+            },
         })
+        comp = games_payload[-1]["team_comparison"]
+        stat_keys = ["PTS", "DRtg", "FG_PCT", "FG3_PCT", "FT_PCT", "TOV", "REB", "AST", "STL", "BLK", "PF"]
+        comp["bars"] = {}
+        for k in stat_keys:
+            a = comp["away"].get(k)
+            h = comp["home"].get(k)
+            if a is None:
+                a = 0
+            if h is None:
+                h = 0
+            try:
+                a, h = float(a), float(h)
+            except (TypeError, ValueError):
+                a, h = 0, 0
+            total = a + h
+            if total <= 0:
+                comp["bars"][k] = {"away_pct": 50, "home_pct": 50}
+            else:
+                comp["bars"][k] = {"away_pct": round(a / total * 100, 1), "home_pct": round(h / total * 100, 1)}
 
     return {
         "date": date_str,

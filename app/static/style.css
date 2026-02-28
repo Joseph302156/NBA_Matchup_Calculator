@@ -1,36 +1,36 @@
-/* NBA Matchup Calculator — dark theme */
+/* NBA Matchup Calculator — dark theme (Notion/Cursor style) */
 :root {
-  --bg: #0f1419;
-  --surface: #1a2332;
-  --bg-card: #1e2a3a;
-  --bg-elevated: #243447;
-  --border: #2d3d52;
-  --border-light: #354a64;
-  --text: #e6edf3;
-  --text-secondary: #8b9cb3;
-  --muted: #5c6e85;
+  --bg: #1e1e1e;
+  --surface: #252526;
+  --bg-card: #2d2d2d;
+  --bg-elevated: #3c3c3c;
+  --border: #3c3c3c;
+  --border-light: #404040;
+  --text: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --muted: #71717a;
   --primary: #58a6ff;
-  --primary-muted: rgba(56, 139, 253, 0.15);
+  --primary-muted: rgba(56, 139, 253, 0.12);
   --away: #7ee8a2;
-  --away-muted: rgba(126, 232, 162, 0.2);
+  --away-muted: rgba(126, 232, 162, 0.18);
   --home: #93d4ff;
-  --home-muted: rgba(147, 212, 255, 0.2);
-  --playing-muted: rgba(134, 239, 172, 0.15);
-  --questionable-muted: rgba(251, 191, 36, 0.15);
-  --doubtful-muted: rgba(251, 191, 36, 0.15);
-  --out-muted: rgba(248, 113, 113, 0.15);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --home-muted: rgba(147, 212, 255, 0.18);
+  --playing-muted: rgba(134, 239, 172, 0.12);
+  --questionable-muted: rgba(251, 191, 36, 0.12);
+  --doubtful-muted: rgba(251, 191, 36, 0.12);
+  --out-muted: rgba(248, 113, 113, 0.12);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
   --radius: 8px;
   --radius-sm: 6px;
-  --radius-lg: 12px;
+  --radius-lg: 10px;
   --radius-pill: 999px;
 }
 
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -41,10 +41,14 @@ body {
 .header {
   padding: 1.5rem 1.5rem 1.75rem;
   border-bottom: 1px solid var(--border);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.header h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
+.header h1 { margin: 0 0 0.25rem; font-size: 1.5rem; font-weight: 600; }
 .tagline { margin: 0; color: var(--text-secondary); font-size: 0.9375rem; }
-.back { color: var(--primary); text-decoration: none; font-size: 0.9375rem; }
+.back { color: var(--primary); text-decoration: none; font-size: 0.9375rem; margin-top: 0.5rem; }
 .back:hover { text-decoration: underline; }
 
 .main { flex: 1; padding: 2rem 1.5rem; }
@@ -66,7 +70,7 @@ body {
 }
 .game-card:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--border);
+  border-color: var(--border-light);
 }
 
 .game-card .matchup-header,

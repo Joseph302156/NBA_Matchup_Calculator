@@ -13,16 +13,13 @@
   </header>
 
   <main class="main">
-    <section class="hero">
-      <h2>See who’s favored — and why</h2>
-      <p>Choose a game date to get win probabilities, full rosters with stats, injury reports, and team ratings. All in one place.</p>
-    </section>
-
     {% if error %}
     <p class="error">{{ error }}</p>
     {% endif %}
 
-    <div class="date-form-wrap">
+    <section class="home-cta">
+      <h2 class="home-cta__title">See who’s favored — and why</h2>
+      <p class="home-cta__desc">Choose a game date to get win probabilities, full rosters with stats, injury reports, and team ratings. All in one place.</p>
       <form action="/results" method="post" class="date-form">
         <label for="game_date">Game date</label>
         <input
@@ -36,7 +33,7 @@
         />
         <button type="submit">Calculate predictions</button>
       </form>
-    </div>
+    </section>
   </main>
 
   <footer class="footer">

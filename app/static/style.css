@@ -239,11 +239,55 @@ body {
 }
 
 /* Home page */
-.page-home .main { padding: 3rem 1.5rem; text-align: center; }
-.hero { margin-bottom: 2rem; }
-.hero h2 { margin: 0 0 0.5rem; font-size: 1.5rem; }
-.hero p { margin: 0; color: var(--text-secondary); }
-.date-form-wrap { display: flex; justify-content: center; }
+.page-home .main {
+  padding: 4rem 1.5rem 3rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-cta {
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem 1.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.home-cta__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.home-cta__desc {
+  margin: 0 0 1.5rem;
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.home-cta .date-form {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: stretch;
+  text-align: left;
+}
+
+.home-cta .date-form label {
+  font-size: 0.875rem;
+}
+
 .date-form {
   padding: 1.5rem;
   background: var(--surface);

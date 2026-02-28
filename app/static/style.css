@@ -74,18 +74,18 @@ body {
 }
 
 .results-panel {
-  flex: 0 0 70%;
-  width: 70%;
+  flex: 0 0 65%;
+  width: 65%;
   min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 1rem;
+  padding-right: 0.5in;
 }
 
 .chat-panel {
-  flex: 0 0 30%;
-  width: 30%;
-  min-width: 240px;
+  flex: 0 0 35%;
+  width: 35%;
+  min-width: 280px;
   max-height: 840px;
   align-self: flex-start;
   display: flex;

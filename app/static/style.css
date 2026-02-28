@@ -289,28 +289,28 @@ body {
   max-width: 520px;
   overflow-x: auto;
 }
-.roster h4 { margin: 0 0 0.75rem; font-size: 0.9375rem; font-weight: 600; color: var(--text); text-align: center; }
+.roster h4 { margin: 0 0 0.75rem; font-size: 0.875rem; font-weight: 600; color: var(--text); text-align: center; }
 .roster table {
   width: 100%;
   min-width: max-content;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--border);
   margin: 0 auto;
   background: var(--bg-card);
 }
-.roster th, .roster td { padding: 0.5rem 0.75rem; text-align: center; border-bottom: 1px solid var(--border-light); }
+.roster th, .roster td { padding: 0.4rem 0.6rem; text-align: center; border-bottom: 1px solid var(--border-light); }
 .roster th {
   background: var(--bg-elevated);
   color: var(--text-secondary);
   font-weight: 500;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.roster td:first-child, .roster th:first-child { text-align: center; padding-left: 0.875rem; }
+.roster td:first-child, .roster th:first-child { text-align: center; padding-left: 0.65rem; }
 .roster td:nth-child(n+4), .roster th:nth-child(n+4) { font-variant-numeric: tabular-nums; }
 .roster tbody tr:hover { background: var(--bg-elevated); }
 .roster tbody tr:last-child td { border-bottom: none; }
@@ -332,8 +332,8 @@ body {
 .badge.out { background: var(--out-muted); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.4); }
 .badge.doubtful { background: var(--doubtful-muted); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); }
 
-.injury-label { margin: 0.875rem 0 0.35rem; font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary); text-align: left; }
-.injury-list { margin: 0; padding-left: 1.25rem; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.7; }
+.injury-label { margin: 0.875rem 0 0.35rem; font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); text-align: left; }
+.injury-list { margin: 0; padding-left: 1.25rem; font-size: 0.75rem; color: var(--text-secondary); line-height: 1.7; }
 
 /* Team comparison (after rosters) */
 .team-comparison {

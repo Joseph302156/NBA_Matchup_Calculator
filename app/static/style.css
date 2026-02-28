@@ -59,6 +59,15 @@ body {
 .results-layout {
   flex: 1;
   display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+}
+
+.results-row {
+  flex: 1;
+  display: flex;
   min-height: 0;
   overflow: hidden;
   gap: 0;
@@ -170,8 +179,9 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   padding: 0.5rem 0;
+  flex-shrink: 0;
 }
 .matchup-btn {
   padding: 0.5rem 0.875rem;
@@ -510,7 +520,7 @@ body {
 .date-form button:hover { opacity: 0.9; }
 
 @media (max-width: 900px) {
-  .results-layout { flex-direction: column; }
+  .results-row { flex-direction: column; }
   .results-panel { width: 100%; flex: 1 1 auto; padding-right: 0; }
   .chat-panel { width: 100%; flex: 0 0 auto; min-height: 220px; max-height: 40vh; }
   .matchup-strip {

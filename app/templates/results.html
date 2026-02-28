@@ -22,15 +22,16 @@
     <p class="no-games">No games found for this date.</p>
     {% else %}
     <div class="results-layout">
-      <div class="results-panel">
-        <nav class="matchup-strip" aria-label="Select matchup">
-          {% for game in games %}
-          <button type="button" class="matchup-btn" data-game-index="{{ loop.index0 }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
-            {{ game.away_tricode }} @ {{ game.home_tricode }}
-          </button>
-          {% endfor %}
-        </nav>
+      <nav class="matchup-strip" aria-label="Select matchup">
+        {% for game in games %}
+        <button type="button" class="matchup-btn" data-game-index="{{ loop.index0 }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
+          {{ game.away_tricode }} @ {{ game.home_tricode }}
+        </button>
+        {% endfor %}
+      </nav>
 
+      <div class="results-row">
+        <div class="results-panel">
         <section class="games" id="games-container">
       {% for game in games %}
       <article class="game-card" id="game-card-{{ loop.index0 }}" data-game-index="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
@@ -191,7 +192,7 @@
       </article>
       {% endfor %}
     </section>
-      </div>
+        </div>
 
       <aside class="chat-panel" aria-label="AI assistant chat">
         <div class="chat-panel__header">AI Assistant</div>
@@ -205,6 +206,7 @@
           <button type="button" id="chat-send" class="chat-panel__send" aria-label="Send">Send</button>
         </div>
       </aside>
+      </div>
     </div>
 
     <script>

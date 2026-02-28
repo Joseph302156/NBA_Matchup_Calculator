@@ -150,11 +150,14 @@
     <script>
       (function() {
         var container = document.getElementById('games-container');
+        if (!container) return;
         var cards = container.querySelectorAll('.game-card');
         var buttons = document.querySelectorAll('.matchup-btn');
         function showGame(index) {
+          var i = Number(index);
           cards.forEach(function(card) {
-            card.hidden = parseInt(card.getAttribute('data-game-index'), 10) !== index;
+            var cardIndex = Number(card.getAttribute('data-game-index'));
+            card.hidden = cardIndex !== i;
           });
           buttons.forEach(function(btn) {
             btn.setAttribute('aria-pressed', btn.getAttribute('data-game-index') === String(index));
@@ -162,7 +165,7 @@
         }
         buttons.forEach(function(btn) {
           btn.addEventListener('click', function() {
-            showGame(parseInt(btn.getAttribute('data-game-index'), 10));
+            showGame(btn.getAttribute('data-game-index'));
           });
         });
       })();

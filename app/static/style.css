@@ -100,6 +100,9 @@ body {
   flex-direction: column;
   align-items: center;
 }
+.game-card[hidden] {
+  display: none !important;
+}
 .game-card:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--border-light);

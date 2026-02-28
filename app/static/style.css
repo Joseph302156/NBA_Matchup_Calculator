@@ -74,7 +74,7 @@ body {
 }
 
 .results-panel {
-  flex: 0 0 calc(70% - 0.35in);
+  flex: 0 0 calc(65% - 0.35in);
   min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -82,9 +82,10 @@ body {
 }
 
 .chat-panel {
-  flex: 0 0 calc(30% - 0.15in);
+  flex: 0 0 calc(35% - 0.15in);
   min-width: 240px;
   margin-left: -0.5in;
+  margin-right: calc(1.5rem - 0.5in);
   max-height: 840px;
   align-self: flex-start;
   display: flex;

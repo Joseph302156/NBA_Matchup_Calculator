@@ -143,10 +143,16 @@ body {
   gap: 0.5in;
   width: 100%;
 }
-.roster { width: fit-content; max-width: 520px; flex-shrink: 0; }
+.roster {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 520px;
+  overflow-x: auto;
+}
 .roster h4 { margin: 0 0 0.75rem; font-size: 0.9375rem; font-weight: 600; color: var(--text); text-align: center; }
 .roster table {
   width: 100%;
+  min-width: max-content;
   border-collapse: collapse;
   font-size: 0.8125rem;
   border-radius: var(--radius-sm);

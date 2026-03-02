@@ -380,7 +380,21 @@ def get_available_player_value(
             else:
                 blended = season_val
 
-            value += mult * minute_share * w * blended
+            # Make scoring and playmaking impact grow faster than linearly so
+            # 20 PPG is worth much more than twice 10 PPG, etc.
+            effective = blended
+            if stat == "PTS":
+                # Normalize around a 10 PPG baseline and square: 10 -> 10, 20 -> 40 (~4x), 5 -> 2.5.
+                baseline = 10.0
+                norm = max(0.0, blended / baseline)
+                effective = baseline * (norm ** 2)
+            elif stat == "AST":
+                # Similar idea for assists; baseline around 5 APG.
+                baseline = 5.0
+                norm = max(0.0, blended / baseline)
+                effective = baseline * (norm ** 2)
+
+            value += mult * minute_share * w * effective
 
     return value, list(out_names)
 

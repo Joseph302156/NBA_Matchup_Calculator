@@ -1,10 +1,9 @@
 """
 AI chat for matchup Q&A: uses matchup context to explain picks, edges, and model logic.
-If OPENAI_API_KEY is set, uses GPT; otherwise answers from a static FAQ/keyword responder.
+Requires OPENAI_API_KEY; all natural-language understanding is handled by the model.
 """
 import json
 import os
-import re
 
 
 def _json_safe(obj):
@@ -99,154 +98,33 @@ Model summary (use this to explain when asked):
 - Win probabilities are from a logistic curve on the strength difference; displayed win% is floored/ceilinged to avoid 0–5% or 95–100%.
 - "Pick" is the team with higher win probability (home or away).
 
-You are given per-player data for both teams: away_players and home_players. Each entry has season averages (MIN, PTS, AST, REB, STL, BLK), status (Playing, Out, Questionable, Doubtful), and when available a last_5_avg object with the same stats over their last 5 games. Use this to:
-- Answer "how has [player] been performing?" with concrete numbers: cite both season averages and last_5_avg when present, and note if they're Out or Questionable.
-- Answer "wouldn't [team] have a disadvantage because [player] is out?" by confirming the disadvantage, citing that player's season (and recent) impact and how the model treats Out players (they subtract value and scale down that team's ORtg/DRtg).
+You are given per-team data (pick, win%, ORtg/DRtg, injuries) and per-player data: away_players and home_players. Each entry has season averages (MIN, PTS, AST, REB, STL, BLK), status (Playing, Out, Questionable, Doubtful), and when available a last_5_avg object with the same stats over their last 5 games.
+
+Use this context to interpret any natural-language question the user asks about this matchup: explain why a team is favored, how a specific player has been performing, how injuries or rest affect the edge, or how the model works.
 
 Answer in 2–4 short paragraphs when explaining a pick or the model. Be concrete: cite the matchup data you're given (win%, ORtg/DRtg, who's out, individual player stats). If the user asks about a specific game, use the matchup for that game index (0-based). The data you're given is always for the date shown as date_display (the results page the user has open). If they ask about a different date (e.g. 'For March 2 why...'), explain that you only have data for the loaded date and they should select that date on the home page to see those matchups."""
-
-
-def _static_reply(message: str, game_index: int, context: dict) -> str:
-    """Keyword-based replies when no API key."""
-    msg = (message or "").strip().lower()
-    games = context.get("games") or []
-    g = games[game_index] if 0 <= game_index < len(games) else (games[0] if games else None)
-
-    if not g:
-        return (
-            "I don't have matchup data on this page. Make sure you've selected a date and the results have loaded "
-            "(you should see matchup cards). The data I use is always for the date shown at the top of this page — "
-            "if you asked about a specific date, pick that date from the home page and open the results, then ask again."
-        )
-
-    away = g.get("away_tricode") or g.get("away_team") or "Away"
-    home = g.get("home_tricode") or g.get("home_team") or "Home"
-    away_full = (g.get("away_team") or away).lower()
-    home_full = (g.get("home_team") or home).lower()
-    pick = g.get("pick") or "—"
-    win_home = (g.get("win_pct_home") or 0) * 100
-    win_away = (g.get("win_pct_away") or 0) * 100
-
-    # "Why do the Warriors have 51%?" / "why does [team] have X% win probability?"
-    if re.search(r"why (do|does) .+ (have|has) .*%|win probability|win %", msg):
-        def _team_in_msg(tricode, full_name):
-            if not tricode and not full_name:
-                return False
-            tc = (tricode or "").lower()
-            fn = (full_name or "").lower()
-            return tc in msg or fn in msg or (fn and any(w in msg for w in fn.split() if len(w) > 2))
-        if _team_in_msg(g.get("away_tricode"), g.get("away_team")):
-            pct = win_away
-            team_label = away
-        elif _team_in_msg(g.get("home_tricode"), g.get("home_team")):
-            pct = win_home
-            team_label = home
-        else:
-            pct = None
-        if pct is not None:
-            return (
-                f"For this matchup ({away} @ {home}), {team_label} have a {pct:.1f}% win probability. "
-                "The model combines season strength (40% weight), availability-adjusted ORtg/DRtg, who's playing "
-                "(with extra weight on high scorers), last 5 games form, injuries, and rest. "
-                f"The pick is {pick}. For a longer explanation, set OPENAI_API_KEY."
-            )
-
-    # Who's out
-    if re.search(r"who('s|s| is) out|injur|out (for|tonight)|missing", msg):
-        parts = []
-        a_inj = g.get("away_injuries") or g.get("away_out") or []
-        h_inj = g.get("home_injuries") or g.get("home_out") or []
-        if a_inj:
-            names = [x.get("player_name", x) if isinstance(x, dict) else x for x in a_inj]
-            parts.append(f"{away}: {', '.join(names)}")
-        if h_inj:
-            names = [x.get("player_name", x) if isinstance(x, dict) else x for x in h_inj]
-            parts.append(f"{home}: {', '.join(names)}")
-        if not parts:
-            return f"No players listed as out for {away} or {home} in the current injury report."
-        return "Injury report — " + "; ".join(parts)
-
-    # Why favored / pick
-    if re.search(r"why (is|are)|favored|pick|who (wins|to pick)|edge", msg):
-        return (
-            f"The model picks **{pick}** (home win% {win_home:.1f}%, away {win_away:.1f}%). "
-            "The prediction weighs: availability-adjusted ORtg/DRtg, who's actually playing (with extra weight on high scorers and recent form), last 5 games, injuries (out players hurt the team), and rest. "
-            f"Ratings: {away} ORtg {g.get('away_ortg')} / DRtg {g.get('away_drtg')}; {home} ORtg {g.get('home_ortg')} / DRtg {g.get('home_drtg')}. "
-            "For a deeper explanation, set OPENAI_API_KEY and ask again."
-        )
-
-    # How does the model work
-    if re.search(r"how (does|do)|model|work|calculat|predict", msg):
-        return (
-            "Predictions combine: (1) season strength at 40% weight; (2) ORtg/DRtg scaled by who's playing (so missing stars pull ratings toward average); "
-            "(3) player value by minutes and stats (scoring scales up above 20 PPG); (4) last 5 games form (weight 1.5); (5) injury penalties; (6) rest (B2B penalty, extra rest bonus); (7) small home court. "
-            "Win% comes from a logistic curve on the strength difference."
-        )
-
-    # Player performance: "how has X been performing" / "how's X been"
-    if re.search(r"how (has|have|'s|is) .* (been )?perform|how .* (been )?play", msg):
-        for plist in (g.get("away_players") or [], g.get("home_players") or []):
-            for p in plist:
-                pname = (p.get("player_name") or "").strip()
-                if not pname:
-                    continue
-                if pname.lower() in msg or any(part in msg for part in pname.lower().split() if len(part) > 2):
-                    season = f"Season: {p.get('MIN')} MIN, {p.get('PTS')} PTS, {p.get('AST')} AST, {p.get('REB')} REB"
-                    last5 = p.get("last_5_avg")
-                    if last5:
-                        season += f". Last 5: {last5.get('PTS')} PTS, {last5.get('MIN')} MIN"
-                    return f"{pname} ({p.get('status', 'Playing')}): {season}."
-        return "Ask about a specific player by name; I'll use their season and last-5 stats from this matchup."
-
-    # Disadvantage because X is out
-    if re.search(r"disadvantage|hurt|weaker|without .* out|because .* (is |'s )?out", msg):
-        for plist in (g.get("away_players") or [], g.get("home_players") or []):
-            for p in plist:
-                pname = (p.get("player_name") or "").strip()
-                if not pname or (p.get("status") or "").lower() != "out":
-                    continue
-                if pname.lower() in msg or any(part in msg for part in pname.lower().split() if len(part) > 2):
-                    pts = p.get("PTS") or 0
-                    return (
-                        f"Yes. {pname} is Out, so the model reduces that team's strength: it subtracts his value "
-                        f"(season ~{pts} PPG and minutes) and scales their ORtg/DRtg toward league average. So that side is at a disadvantage."
-                    )
-        return "The model does penalize teams when key players are Out (value subtracted, ORtg/DRtg scaled down). Check the injury report for who's out."
-
-    # Default
-    return (
-        f"For **{away} @ {home}**: pick is **{pick}** (win% home {win_home:.1f}%, away {win_away:.1f}%). "
-        "Ask 'Who's out?', 'Why is [team] favored?', or 'How does the model work?' for more. To get detailed AI explanations, set OPENAI_API_KEY."
-    )
 
 
 def get_reply(message: str, game_index: int, context: dict) -> str:
     """
     Return a reply for the user message given the current matchup context.
-    Uses OpenAI if OPENAI_API_KEY is set; otherwise static FAQ.
+    Uses OpenAI; there is no keyword-based fallback so the model can adapt to arbitrary questions.
     """
     message = (message or "").strip()
     if not message:
         return "Ask a question about the matchup, the pick, or how the model works."
 
-    # No matchup data on this page — same message for both LLM and static so user knows to load a date
-    games = (context or {}).get("games") or []
-    if not games:
+    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not api_key:
         return (
-            "I don't have matchup data on this page. Make sure you've selected a date and the results have loaded "
-            "(you should see matchup cards). If you asked about a specific date (e.g. March 2), pick that date on the "
-            "home page, open the results, then ask your question again — I can only see the matchups for the date "
-            "currently shown."
+            "To answer detailed natural-language questions about this matchup, set OPENAI_API_KEY "
+            "in the server environment and reload the app."
         )
 
-    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if api_key:
-        try:
-            return _openai_reply(message, game_index, context, api_key)
-        except Exception as e:
-            return f"The AI service returned an error: {e}. Falling back to a short answer: " + _static_reply(message, game_index, context)
-
-    return _static_reply(message, game_index, context)
+    try:
+        return _openai_reply(message, game_index, context, api_key)
+    except Exception as e:
+        return f"The AI service returned an error: {e}. Try again in a moment."
 
 
 def _mentioned_players(message: str, game: dict) -> list:

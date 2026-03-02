@@ -211,6 +211,7 @@
 
     <script>
       window.__MATCHUP_CONTEXT__ = {{ (chat_context or {}) | tojson }};
+      window.__MATCHUP_DATE__ = "{{ date }}";
     </script>
     <script>
       (function() {
@@ -266,13 +267,14 @@
             chatInput.value = '';
             chatSend.disabled = true;
             addMessage('…', true);
+            var gameDate = window.__MATCHUP_DATE__ || "";
             fetch('/api/chat', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 message: text,
                 game_index: currentGameIndex,
-                context: chatContext
+                game_date: gameDate
               })
             })
               .then(function(r) { return r.json(); })

@@ -6,6 +6,7 @@ Run from project root: uvicorn app.main:app --reload
 import json
 import os
 from datetime import date, timedelta
+from typing import Optional
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
@@ -80,15 +81,18 @@ async def results_post(request: Request, game_date: str = Form(...)):
     data["chat_context"] = build_chat_context(data["date_display"], data.get("games") or []) if data.get("games") else {}
     return templates.TemplateResponse("results.html", data)
 
-
 class ChatBody(BaseModel):
     message: str = ""
     game_index: int = 0
-    context: dict = {}
+    game_date: Optional[str] = None
 
 
 @app.post("/api/chat")
 async def api_chat(body: ChatBody):
-    """Chat endpoint: answer questions about the matchup using embedded context."""
-    reply = get_reply(body.message, body.game_index, body.context)
+    """Chat endpoint: answer questions about the matchup using server-side matchup data."""
+    # Use the requested date if provided; otherwise fall back to today's date string.
+    target_date = (body.game_date or date.today().strftime("%Y-%m-%d")).strip()
+    data = build_predictions_for_date(target_date)
+    ctx = build_chat_context(data.get("date_display", target_date), data.get("games") or [])
+    reply = get_reply(body.message, body.game_index, ctx)
     return {"reply": reply}

@@ -435,7 +435,8 @@ def get_available_player_value(
             if w_share <= 0:
                 continue
             b = boosts.setdefault(key, {"MIN": 0.0})
-            b["MIN"] += missing_min * w_share
+            added_min = b["MIN"] + missing_min * w_share
+            b["MIN"] = min(added_min, 5.0)  # cap redistributed minutes boost at +5 MPG
             for s in stat_keys:
                 if missing_stats[s] == 0.0:
                     continue

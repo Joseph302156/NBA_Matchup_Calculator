@@ -2,6 +2,7 @@
 Fetch upcoming games, team stats, recent form, injuries (ESPN primary, nbainjuries fallback), rest/B2B.
 """
 import time
+import math
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -384,17 +385,17 @@ def get_available_player_value(
             # high-usage scorers and creators are valued disproportionately more.
             effective = blended
             if stat == "PTS":
-                # Piecewise exponential-ish scaling:
-                # - 20+ PPG gets a boost,
-                # - 25+ PPG is much higher,
-                # - 30+ PPG is worth ~4x a 25 PPG scorer.
+                # Exponential scaling from 20+ PPG upward.
+                # We want something like:
+                # - baseline 20 PPG
+                # - 27 PPG ≈ 10x the value of 20 PPG
+                # Use: effective = pts * exp(k * (pts - 20)),
+                # where exp(k * 7) ≈ 10 ⇒ k = ln(10) / 7.
                 pts = max(0.0, blended)
-                if pts >= 30:
-                    effective = pts * 4.0
-                elif pts >= 25:
-                    effective = pts * 2.5
-                elif pts >= 20:
-                    effective = pts * 1.5
+                if pts >= 20.0:
+                    k = math.log(10.0) / 7.0
+                    mult = math.exp(k * (pts - 20.0))
+                    effective = pts * mult
                 else:
                     effective = pts
             elif stat == "AST":

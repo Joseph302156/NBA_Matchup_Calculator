@@ -352,9 +352,7 @@ def get_available_player_value(
     value = 0.0
     for p in roster_stats:
         nnorm = _normalize_name_for_match(p["player_name"])
-        if nnorm in out_names:
-            # Fully out → no contribution
-            continue
+        is_out = nnorm in out_names
 
         # Minutes share: starters ~0.15–0.2, rotation guys ~0.05–0.1, deep bench very small.
         try:
@@ -366,8 +364,9 @@ def get_available_player_value(
         # still count more than deep bench. Range roughly [0.2, 1.0].
         minute_factor = 0.2 + 0.8 * minute_share
 
-        # Questionable / doubtful players at half strength.
-        mult = 0.5 if nnorm in questionable_names else 1.0
+        # Questionable / doubtful players at half strength. Fully Out players are handled
+        # separately via a negative contribution.
+        mult = 0.5 if (nnorm in questionable_names and not is_out) else 1.0
 
         pid = p.get("player_id")
         recent = (recent_stats or {}).get(pid) if pid is not None else None
@@ -404,7 +403,10 @@ def get_available_player_value(
                 norm = max(0.0, blended / baseline)
                 effective = baseline * (norm ** 2)
 
-            value += mult * minute_factor * w * effective
+            # Available players add value; Out players subtract their would-be value, so
+            # losing a high-PPG, high-minutes star actively drags the team's strength down.
+            direction = -1.0 if is_out else 1.0
+            value += direction * mult * minute_factor * w * effective
 
     return value, list(out_names)
 

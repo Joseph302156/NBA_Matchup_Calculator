@@ -18,7 +18,8 @@ REFRESH_MINUTES = 30
 REQUEST_DELAY = 0.6
 
 # Model: home court and form
-HOME_ADVANTAGE_PTS = 2.5
+# Softer home-court advantage so venue matters less relative to who's playing.
+HOME_ADVANTAGE_PTS = 1.5
 RECENT_FORM_WEIGHT = 0.25
 # Rest / back-to-back
 REST_B2B_PENALTY_PTS = 2.0       # pts to subtract when team played yesterday (0 rest days)

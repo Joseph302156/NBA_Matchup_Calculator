@@ -22,7 +22,7 @@ REQUEST_DELAY = 0.6
 # Softer home-court advantage so venue matters less relative to who's playing.
 HOME_ADVANTAGE_PTS = 1
 # Heavier weight on recent form (last RECENT_GAMES_N games).
-RECENT_FORM_WEIGHT = 1.25
+RECENT_FORM_WEIGHT = 1.75
 # Rest / back-to-back
 REST_B2B_PENALTY_PTS = 2.0       # pts to subtract when team played yesterday (0 rest days)
 REST_EXTRA_BONUS_PTS = 0.5      # pts to add when team has 2+ days rest

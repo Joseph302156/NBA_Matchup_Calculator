@@ -92,8 +92,7 @@ body {
   min-height: 200px;
   align-self: flex-start;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -102,18 +101,24 @@ body {
 }
 
 .chat-panel__header {
+  position: relative;
+  z-index: 1;
   padding: 0.75rem 1rem;
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text);
   border-bottom: 1px solid var(--border);
+  background: var(--surface);
   flex-shrink: 0;
 }
 
+/* Absolute positioning so Safari respects height and scrolls (flex + min-height:0 is unreliable in Safari) */
 .chat-panel__messages {
-  flex: 1 1 0;
-  min-height: 0;
-  max-height: 100%;
+  position: absolute;
+  top: 2.75rem;
+  left: 0;
+  right: 0;
+  bottom: 3.25rem;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 1rem;
@@ -121,6 +126,19 @@ body {
   flex-direction: column;
   gap: 0.75rem;
   -webkit-overflow-scrolling: touch;
+}
+
+.chat-panel__input-wrap {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
 
 .chat-msg {
@@ -148,13 +166,6 @@ body {
 
 .chat-msg__text { white-space: pre-wrap; word-break: break-word; }
 
-.chat-panel__input-wrap {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
 
 .chat-panel__input {
   flex: 1;

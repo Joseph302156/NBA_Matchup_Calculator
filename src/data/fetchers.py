@@ -343,6 +343,104 @@ def get_available_player_value(
         elif status in ("Questionable", "Doubtful"):
             questionable_names.add(pname)
 
+    # Identify the "core" rotation: top 10 players by minutes. Redistribution of
+    # Out players' minutes and stats is limited to this group so deep bench guys
+    # don't meaningfully participate.
+    mins_for_rank = []
+    for p in roster_stats:
+        nnorm = _normalize_name_for_match(p["player_name"])
+        key = p.get("player_id") or nnorm
+        try:
+            pm = float(p.get("MIN") or 0.0)
+        except (TypeError, ValueError):
+            pm = 0.0
+        mins_for_rank.append((pm, key))
+    mins_for_rank.sort(reverse=True)
+    core_keys = {key for _, key in mins_for_rank[:10]} if mins_for_rank else set()
+
+    # Redistribute minutes and box-score stats from Out players (within the top 10)
+    # to teammates at the same position. The best remaining player at that position gets
+    # ~1/4 of the missing minutes and stats; the rest are spread fairly evenly
+    # across other players at that position.
+    #
+    # These boosts are used only for valuation, not for what's displayed.
+    boosts = {}  # key (player_id or name) -> {"MIN": extra_min, stat_name: extra_stat, ...}
+    stat_keys = [s for s in weights.keys() if s != "MIN"]
+
+    by_pos = {}
+    for p in roster_stats:
+        pos = (p.get("position") or "").strip() or "UNK"
+        nnorm = _normalize_name_for_match(p["player_name"])
+        key = p.get("player_id") or nnorm
+        by_pos.setdefault(pos, []).append({"p": p, "nnorm": nnorm, "key": key})
+
+    for pos, players in by_pos.items():
+        # Limit redistribution mechanics to the core rotation only.
+        out_players = [it for it in players if it["nnorm"] in out_names and (it["key"] in core_keys)]
+        avail_players = [it for it in players if it["nnorm"] not in out_names and (it["key"] in core_keys)]
+        if not out_players or not avail_players:
+            continue
+
+        # Total missing minutes and stats from Out players at this position.
+        missing_min = 0.0
+        missing_stats = {s: 0.0 for s in stat_keys}
+        for it in out_players:
+            p = it["p"]
+            try:
+                missing_min += float(p.get("MIN") or 0.0)
+            except (TypeError, ValueError):
+                pass
+            for s in stat_keys:
+                try:
+                    missing_stats[s] += float(p.get(s) or 0.0)
+                except (TypeError, ValueError):
+                    continue
+
+        if missing_min <= 0 and all(v == 0.0 for v in missing_stats.values()):
+            continue
+
+        # Rank available players at this position by scoring (PTS) as a proxy
+        # for "best" at that position.
+        def _score(it):
+            p = it["p"]
+            try:
+                return float(p.get("PTS") or 0.0)
+            except (TypeError, ValueError):
+                return 0.0
+
+        avail_sorted = sorted(avail_players, key=_score, reverse=True)
+        m = len(avail_sorted)
+        if m <= 0:
+            continue
+
+        weights_pos = {}
+        if m == 1:
+            weights_pos[avail_sorted[0]["key"]] = 1.0
+        else:
+            top_key = avail_sorted[0]["key"]
+            # Give the best remaining player at this position 1/4 of the
+            # missing minutes/stats; spread the remaining 3/4 evenly.
+            top_share = 1.0 / 4.0
+            remaining_share = 1.0 - top_share
+            other_share = remaining_share / (m - 1)
+            for idx, it in enumerate(avail_sorted):
+                if idx == 0:
+                    weights_pos[it["key"]] = top_share
+                else:
+                    weights_pos[it["key"]] = other_share
+
+        for it in avail_sorted:
+            key = it["key"]
+            w_share = weights_pos.get(key, 0.0)
+            if w_share <= 0:
+                continue
+            b = boosts.setdefault(key, {"MIN": 0.0})
+            b["MIN"] += missing_min * w_share
+            for s in stat_keys:
+                if missing_stats[s] == 0.0:
+                    continue
+                b[s] = b.get(s, 0.0) + missing_stats[s] * w_share
+
     # Total per-game minutes across the roster; should be ~240 in practice.
     total_min = 0.0
     for p in roster_stats:
@@ -358,11 +456,16 @@ def get_available_player_value(
         nnorm = _normalize_name_for_match(p["player_name"])
         is_out = nnorm in out_names
 
+        pid = p.get("player_id")
+        key = pid or nnorm
+        boost = boosts.get(key, {})
+
         # Minutes share: starters ~0.15–0.2, rotation guys ~0.05–0.1, deep bench very small.
         try:
-            p_min = float(p.get("MIN") or 0.0)
+            base_min = float(p.get("MIN") or 0.0)
         except (TypeError, ValueError):
-            p_min = 0.0
+            base_min = 0.0
+        p_min = base_min + float(boost.get("MIN") or 0.0)
         minute_share = max(0.0, p_min / total_min)
         # Use minutes as a softer modifier: mostly driven by statlines, but starters
         # still count more than deep bench. Range roughly [0.2, 1.0].
@@ -372,13 +475,12 @@ def get_available_player_value(
         # separately via a negative contribution.
         mult = 0.5 if (nnorm in questionable_names and not is_out) else 1.0
 
-        pid = p.get("player_id")
         recent = (recent_stats or {}).get(pid) if pid is not None else None
 
         for stat, w in weights.items():
             if stat == "MIN":
                 continue
-            season_val = p.get(stat) or 0.0
+            season_val = (p.get(stat) or 0.0) + float(boost.get(stat) or 0.0)
             if recent and stat in recent:
                 blended = (1 - recent_weight) * season_val + recent_weight * (recent.get(stat) or 0.0)
             else:

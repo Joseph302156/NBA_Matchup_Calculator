@@ -21,6 +21,7 @@ from src.data.fetchers import (
     get_player_last_game_dates,
     get_player_recent_stats,
     augment_injuries_with_recent_games,
+    filter_injuries_by_recent_play,
 )
 from src.analysis.stat_importance import get_player_stat_weights
 from src.model import predict_game
@@ -51,6 +52,8 @@ def main():
     injuries = get_injuries()
     data_cache = {}
     player_last_game = get_player_last_game_dates(data_cache)
+    if player_last_game:
+        filter_injuries_by_recent_play(injuries, team_ids, player_last_game, days_threshold=2)
     augment_injuries_with_recent_games(injuries, team_ids, player_last_game)
     try:
         player_recent = get_player_recent_stats(data_cache)

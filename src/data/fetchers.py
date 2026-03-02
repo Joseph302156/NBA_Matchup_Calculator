@@ -21,7 +21,7 @@ from nba_api.stats.library.parameters import PerModeDetailed, PlayerOrTeamAbbrev
 from nba_api.stats.static import teams as static_teams
 from nba_api.live.nba.endpoints import scoreboard
 
-from config import current_season, UPCOMING_DAYS, RECENT_GAMES_N, REQUEST_DELAY, DAYS_SINCE_LAST_GAME_OUT, RECENT_STATS_GAMES, RECENT_STATS_WEIGHT
+from config import current_season, UPCOMING_DAYS, RECENT_GAMES_N, REQUEST_DELAY, DAYS_SINCE_LAST_GAME_OUT, INJURY_RECENT_PLAY_DAYS, RECENT_STATS_GAMES, RECENT_STATS_WEIGHT
 
 
 def _season():
@@ -678,6 +678,180 @@ def augment_injuries_with_recent_games(injuries, team_ids, player_last_game_date
                 injuries.setdefault(tid, []).append({"status": "Out", "player_name": pname})
 
 
+def filter_injuries_by_recent_play(injuries, team_ids, player_last_game_dates, days_threshold=None):
+    """
+    Remove from the injury list any player who has played in the last days_threshold days.
+    ESPN (and other sources) often leave players on the report after they've returned; this
+    uses actual game logs so we don't show someone as Out when they've already played.
+    Mutates injuries in place.
+    """
+    if days_threshold is None:
+        days_threshold = INJURY_RECENT_PLAY_DAYS
+    from datetime import date
+    today = date.today()
+    for tid in team_ids:
+        roster = get_team_roster(tid)
+        name_to_id = {}
+        for p in roster:
+            pname = (p.get("player_name") or "").strip()
+            pid = p.get("player_id")
+            if pname and pid is not None:
+                name_to_id[_normalize_name_for_match(pname)] = pid
+        current = injuries.get(tid, [])
+        if not current:
+            continue
+        keep = []
+        for inv in current:
+            pname = inv.get("player_name") or ""
+            pid = name_to_id.get(_normalize_name_for_match(pname))
+            if pid is None:
+                keep.append(inv)
+                continue
+            last_d = player_last_game_dates.get(pid)
+            if last_d is None:
+                keep.append(inv)
+                continue
+            days_since = (today - last_d).days
+            if days_since <= days_threshold:
+                continue  # played recently -> drop from injury list
+            keep.append(inv)
+        injuries[tid] = keep
+
+
+def filter_injuries_by_recent_play(injuries, team_ids, player_last_game_dates, days_threshold=None):
+    """
+    Remove from the injury list any player who has played in the last days_threshold days.
+    ESPN (and other sources) often leave players on the report after they've returned; this
+    uses actual game logs so we don't show someone as Out when they've already played.
+    Mutates injuries in place.
+    """
+    if days_threshold is None:
+        days_threshold = INJURY_RECENT_PLAY_DAYS
+    from datetime import date
+    today = date.today()
+    for tid in team_ids:
+        roster = get_team_roster(tid)
+        name_to_id = {}
+        for p in roster:
+            pname = (p.get("player_name") or "").strip()
+            pid = p.get("player_id")
+            if pname and pid is not None:
+                name_to_id[_normalize_name_for_match(pname)] = pid
+        current = injuries.get(tid, [])
+        if not current:
+            continue
+        keep = []
+        for inv in current:
+            pname = inv.get("player_name") or ""
+            pid = name_to_id.get(_normalize_name_for_match(pname))
+            if pid is None:
+                keep.append(inv)
+                continue
+            last_d = player_last_game_dates.get(pid)
+            if last_d is None:
+                keep.append(inv)
+                continue
+            days_since = (today - last_d).days
+            if days_since <= days_threshold:
+                continue  # played recently -> drop from injury list
+            keep.append(inv)
+        injuries[tid] = keep
+
+
+def get_game_day_availability(target_date):
+    """
+    For a given date, fetch ESPN scoreboard + game summaries and return which players
+    are listed as available for that day's games (e.g. upgraded from Out to play).
+    Returns dict nba_team_id -> set of normalized player names who are available that day.
+    Used to clear stale "Out" when the player was upgraded to play today.
+    """
+    from datetime import date
+    if hasattr(target_date, "strftime"):
+        date_obj = target_date
+    else:
+        try:
+            date_obj = datetime.strptime(str(target_date)[:10], "%Y-%m-%d").date()
+        except ValueError:
+            return {}
+    espn_to_nba = _espn_team_id_to_nba_id()
+    if not espn_to_nba:
+        return {}
+    dates_param = date_obj.strftime("%Y%m%d")
+    try:
+        time.sleep(0.2)
+        r = requests.get(
+            f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates={dates_param}",
+            timeout=12,
+        )
+        r.raise_for_status()
+        data = r.json()
+    except Exception:
+        return {}
+    events = data.get("events") or []
+    availability = {}  # nba_team_id -> set of normalized names
+    for ev in events:
+        ev_id = ev.get("id")
+        if not ev_id:
+            continue
+        try:
+            time.sleep(0.25)
+            r2 = requests.get(
+                f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event={ev_id}",
+                timeout=10,
+            )
+            r2.raise_for_status()
+            summary = r2.json()
+        except Exception:
+            continue
+        box = summary.get("boxscore") or summary.get("roster") or {}
+        teams_list = box.get("teams") or box.get("roster") or []
+        if not isinstance(teams_list, list):
+            teams_list = []
+        for group in teams_list:
+            if not isinstance(group, dict):
+                continue
+            team_obj = group.get("team", group)
+            espn_team_id = (team_obj.get("id") if isinstance(team_obj, dict) else None) or group.get("id")
+            if not espn_team_id:
+                continue
+            nba_id = espn_to_nba.get(str(espn_team_id))
+            if not nba_id:
+                continue
+            players = group.get("players") or group.get("statistics") or group.get("roster") or []
+            if not isinstance(players, list):
+                players = []
+            for p in players:
+                if not isinstance(p, dict):
+                    continue
+                ath = p.get("athlete", p)
+                injuries_list = ath.get("injuries") or p.get("injuries") or []
+                if injuries_list and isinstance(injuries_list[0], dict):
+                    st = (injuries_list[0].get("status") or "").lower()
+                    if st in ("out", "out for season", "doubtful"):
+                        continue
+                name = (ath.get("fullName") or ath.get("displayName") or ath.get("name") or p.get("name") or "").strip()
+                if name:
+                    availability.setdefault(nba_id, set()).add(_normalize_name_for_match(name))
+    return availability
+
+
+def apply_game_day_availability(injuries, game_day_availability):
+    """
+    Remove from injuries any player who is in game_day_availability for their team.
+    Use after get_game_day_availability(date) so players upgraded to play today show as Playing.
+    Mutates injuries in place.
+    """
+    if not game_day_availability:
+        return
+    for tid, keep_names in game_day_availability.items():
+        current = injuries.get(tid, [])
+        if not current:
+            continue
+        available_normalized = keep_names or set()
+        keep = [inv for inv in current if _normalize_name_for_match(inv.get("player_name") or "") not in available_normalized]
+        injuries[tid] = keep
+
+
 def _espn_team_id_to_nba_id():
     """Map ESPN API team id -> nba_api team id. Fetches ESPN teams list once."""
     nba_by_abbrev = {t["abbreviation"]: t["id"] for t in static_teams.get_teams()}
@@ -761,6 +935,8 @@ def get_injuries():
     Injury report: tries ESPN roster API first (no Java, reliable); if empty or error,
     falls back to nbainjuries. Returns dict team_id -> list of
     {'status': 'Out'|'Doubtful'|'Questionable', 'player_name': str}.
+    Caller should then run filter_injuries_by_recent_play() so anyone who has played
+    in the last INJURY_RECENT_PLAY_DAYS is not shown as Out (sources are often stale).
     """
     injuries = get_injuries_espn()
     if injuries:

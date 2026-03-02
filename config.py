@@ -54,3 +54,5 @@ RECENT_STATS_WEIGHT = 0.55     # 0 = season only, 1 = recent only; 0.55 = slight
 
 # Long-term / no-recent-game: treat as Out if no game in this many days
 DAYS_SINCE_LAST_GAME_OUT = 14
+# If a player on the injury report has played in the last N days, treat as Playing (sources often stale)
+INJURY_RECENT_PLAY_DAYS = 2

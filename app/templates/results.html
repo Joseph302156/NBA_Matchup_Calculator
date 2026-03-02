@@ -210,13 +210,18 @@
     </div>
 
     <script>
+      window.__MATCHUP_CONTEXT__ = {{ chat_context | tojson }};
+    </script>
+    <script>
       (function() {
         var container = document.getElementById('games-container');
         if (!container) return;
         var cards = container.querySelectorAll('.game-card');
         var buttons = document.querySelectorAll('.matchup-btn');
+        var currentGameIndex = 0;
         function showGame(index) {
           var i = Number(index);
+          currentGameIndex = i;
           cards.forEach(function(card) {
             var cardIndex = Number(card.getAttribute('data-game-index'));
             card.hidden = cardIndex !== i;
@@ -234,6 +239,7 @@
         var chatMessages = document.getElementById('chat-messages');
         var chatInput = document.getElementById('chat-input');
         var chatSend = document.getElementById('chat-send');
+        var chatContext = window.__MATCHUP_CONTEXT__ || { games: [] };
         if (chatMessages && chatInput && chatSend) {
           function addMessage(text, isBot) {
             var div = document.createElement('div');
@@ -245,12 +251,38 @@
             chatMessages.appendChild(div);
             chatMessages.scrollTop = chatMessages.scrollHeight;
           }
+          function setLastBotMessage(text) {
+            var botMsgs = chatMessages.querySelectorAll('.chat-msg--bot');
+            if (botMsgs.length) {
+              var last = botMsgs[botMsgs.length - 1];
+              var span = last.querySelector('.chat-msg__text');
+              if (span) span.textContent = text;
+            }
+          }
           function sendMessage() {
             var text = (chatInput.value || '').trim();
             if (!text) return;
             addMessage(text, false);
             chatInput.value = '';
-            addMessage('AI responses will appear here once connected. Try asking: "Why is [team] favored?" or "Who\'s out for [team]?"', true);
+            chatSend.disabled = true;
+            addMessage('…', true);
+            fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                message: text,
+                game_index: currentGameIndex,
+                context: chatContext
+              })
+            })
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                setLastBotMessage(data.reply || 'No reply.');
+              })
+              .catch(function(err) {
+                setLastBotMessage('Sorry, something went wrong. Try again.');
+              })
+              .then(function() { chatSend.disabled = false; });
           }
           chatSend.addEventListener('click', sendMessage);
           chatInput.addEventListener('keydown', function(e) {

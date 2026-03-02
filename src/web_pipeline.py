@@ -57,6 +57,23 @@ def _roster_with_injury_status(team_id, injuries_list, player_stats_cache):
     return result
 
 
+def _enrich_roster_with_recent(roster, player_recent):
+    """Add last-5-game averages to each player for chat/context. Preserves original keys."""
+    out = []
+    for p in roster:
+        rec = (player_recent or {}).get(p.get("player_id")) or {}
+        out.append({
+            **p,
+            "recent_min": round(rec["MIN"], 1) if rec.get("MIN") is not None else None,
+            "recent_pts": round(rec["PTS"], 1) if rec.get("PTS") is not None else None,
+            "recent_ast": round(rec["AST"], 1) if rec.get("AST") is not None else None,
+            "recent_reb": round(rec["REB"], 1) if rec.get("REB") is not None else None,
+            "recent_stl": round(rec["STL"], 1) if rec.get("STL") is not None else None,
+            "recent_blk": round(rec["BLK"], 1) if rec.get("BLK") is not None else None,
+        })
+    return out
+
+
 def build_predictions_for_date(target_date):
     """
     target_date: date object or 'YYYY-MM-DD' string.
@@ -134,6 +151,8 @@ def build_predictions_for_date(target_date):
 
         home_roster = _roster_with_injury_status(hid, home_injuries, data_cache)
         away_roster = _roster_with_injury_status(aid, away_injuries, data_cache)
+        home_roster = _enrich_roster_with_recent(home_roster, player_recent)
+        away_roster = _enrich_roster_with_recent(away_roster, player_recent)
 
         home_days = get_rest_days(hid, g["game_date_est"], last_game_dates)
         away_days = get_rest_days(aid, g["game_date_est"], last_game_dates)
@@ -167,7 +186,7 @@ def build_predictions_for_date(target_date):
             "home_team_name": g["home_team_name"],
             "home_tricode": g["home_tricode"],
             "home_team_id": hid,
-            "away_roster": away_roster,
+            "away_roster": away_roster,  # includes recent_* when available
             "home_roster": home_roster,
             "away_injuries": away_injuries,
             "home_injuries": home_injuries,

@@ -3,6 +3,7 @@
 Full-stack web app: pick a date → see NBA matchup predictions with rosters, stats, injuries, win%.
 Run from project root: uvicorn app.main:app --reload
 """
+import json
 import os
 from datetime import date, timedelta
 
@@ -10,13 +11,16 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 from src.web_pipeline import build_predictions_for_date
+from app.chat import build_chat_context, get_reply
 
 app = FastAPI(title="NBA Matchup Calculator", version="1.0")
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE, "templates"))
+templates.env.filters["tojson"] = lambda v: json.dumps(v)
 
 if os.path.exists(os.path.join(BASE, "static")):
     app.mount("/static", StaticFiles(directory=os.path.join(BASE, "static")), name="static")
@@ -52,6 +56,7 @@ async def results_get(request: Request, date_str: str = ""):
         )
     data = build_predictions_for_date(date_str)
     data["request"] = request
+    data["chat_context"] = build_chat_context(data["date_display"], data.get("games") or []) if data.get("games") else {}
     return templates.TemplateResponse("results.html", data)
 
 
@@ -72,4 +77,18 @@ async def results_post(request: Request, game_date: str = Form(...)):
         )
     data = build_predictions_for_date(game_date.strip())
     data["request"] = request
+    data["chat_context"] = build_chat_context(data["date_display"], data.get("games") or []) if data.get("games") else {}
     return templates.TemplateResponse("results.html", data)
+
+
+class ChatBody(BaseModel):
+    message: str = ""
+    game_index: int = 0
+    context: dict = {}
+
+
+@app.post("/api/chat")
+async def api_chat(body: ChatBody):
+    """Chat endpoint: answer questions about the matchup using embedded context."""
+    reply = get_reply(body.message, body.game_index, body.context)
+    return {"reply": reply}

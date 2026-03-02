@@ -60,6 +60,8 @@ def predict_game(
     ortg_drtg=None,
     available_value_home=None,
     available_value_away=None,
+    total_value_home=None,
+    total_value_away=None,
 ):
     """
     game: dict with home_team_id, away_team_id, ...
@@ -69,6 +71,8 @@ def predict_game(
     rest: dict with 'home_days', 'away_days' (int or None); 0 = B2B.
     ortg_drtg: dict team_id -> {E_OFF_RATING, E_DEF_RATING}.
     available_value_home/away: float, weighted sum of available players' stats.
+    total_value_home/away: float, same metric if everyone played; used to scale ORtg/DRtg
+        by who is actually playing so ratings reflect the current lineup.
 
     Returns: (win_pct_home, win_pct_away, pick_home True/False).
     """
@@ -94,11 +98,31 @@ def predict_game(
     else:
         away_base = float(away_base)
 
-    # Team offensive/defensive rating: net rating vs league (~100)
+    # Team offensive/defensive rating: scale by who is actually playing so ORtg/DRtg
+    # reflect contribution of available players only (league avg = 100).
     home_od = ortg_drtg.get(hid, {})
     away_od = ortg_drtg.get(aid, {})
-    home_net = (float(home_od.get("E_OFF_RATING", 0) or 0) - float(home_od.get("E_DEF_RATING", 0) or 0))
-    away_net = (float(away_od.get("E_OFF_RATING", 0) or 0) - float(away_od.get("E_DEF_RATING", 0) or 0))
+    home_ortg_raw = float(home_od.get("E_OFF_RATING", 0) or 0)
+    home_drtg_raw = float(home_od.get("E_DEF_RATING", 0) or 0)
+    away_ortg_raw = float(away_od.get("E_OFF_RATING", 0) or 0)
+    away_drtg_raw = float(away_od.get("E_DEF_RATING", 0) or 0)
+
+    league_avg = 100.0
+    if total_value_home and total_value_home > 0 and available_value_home is not None:
+        ratio_h = max(0.0, min(1.0, available_value_home / total_value_home))
+        home_ortg_adj = league_avg + (home_ortg_raw - league_avg) * ratio_h
+        home_drtg_adj = league_avg + (home_drtg_raw - league_avg) * ratio_h
+    else:
+        home_ortg_adj, home_drtg_adj = home_ortg_raw, home_drtg_raw
+    if total_value_away and total_value_away > 0 and available_value_away is not None:
+        ratio_a = max(0.0, min(1.0, available_value_away / total_value_away))
+        away_ortg_adj = league_avg + (away_ortg_raw - league_avg) * ratio_a
+        away_drtg_adj = league_avg + (away_drtg_raw - league_avg) * ratio_a
+    else:
+        away_ortg_adj, away_drtg_adj = away_ortg_raw, away_drtg_raw
+
+    home_net = home_ortg_adj - home_drtg_adj
+    away_net = away_ortg_adj - away_drtg_adj
     home_base += home_net * ORTG_DRTG_WEIGHT
     away_base += away_net * ORTG_DRTG_WEIGHT
 

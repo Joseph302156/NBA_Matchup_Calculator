@@ -141,10 +141,13 @@ def build_predictions_for_date(target_date):
 
         avail_home, _ = get_available_player_value(hid, home_injuries, data_cache, player_weights, recent_stats=player_recent)
         avail_away, _ = get_available_player_value(aid, away_injuries, data_cache, player_weights, recent_stats=player_recent)
+        total_home, _ = get_available_player_value(hid, [], data_cache, player_weights, recent_stats=player_recent)
+        total_away, _ = get_available_player_value(aid, [], data_cache, player_weights, recent_stats=player_recent)
 
         win_home, win_away, pick_home = predict_game(
             g, team_stats, recent_form=recent_form, injuries=injuries, rest=rest,
             ortg_drtg=ortg_drtg, available_value_home=avail_home, available_value_away=avail_away,
+            total_value_home=total_home, total_value_away=total_away,
         )
         pick_team = g["home_team_name"] if pick_home else g["away_team_name"]
         pick_pct = win_home if pick_home else win_away

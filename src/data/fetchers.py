@@ -300,47 +300,88 @@ def _normalize_name_for_match(name):
     return s
 
 
-def get_available_player_value(team_id, injuries_list, player_stats_cache=None, weights=None, recent_stats=None, recent_weight=None):
+def get_available_player_value(
+    team_id,
+    injuries_list,
+    player_stats_cache=None,
+    weights=None,
+    recent_stats=None,
+    recent_weight=None,
+):
     """
     Sum of weighted stat contributions for players who are NOT out (or half for Questionable/Doubtful).
+
+    Player impact is explicitly scaled by their share of the team's minutes so that
+    30–40 MPG starters / stars contribute much more than deep bench players.
+
     If recent_stats (dict player_id -> {MIN, PTS, ...}) is provided, each player's contribution
     uses a blend of season and recent averages so "how they're playing lately" matters.
     recent_weight: 0 = season only, 1 = recent only; default RECENT_STATS_WEIGHT.
+
     Returns single float 'value' and list of out player names for logging.
     """
     if weights is None:
         weights = {"PTS": 1.0, "AST": 0.5, "REB": 0.4, "STL": 0.6, "BLK": 0.6}
     if recent_weight is None:
         recent_weight = RECENT_STATS_WEIGHT
+
     roster_stats = get_roster_with_stats(team_id, player_stats_cache)
+
     out_names = set()
     questionable_names = set()
     for inv in injuries_list or []:
         pname = _normalize_name_for_match(inv.get("player_name") or "")
         if not pname:
             continue
-        if inv.get("status") == "Out":
+        status = inv.get("status")
+        if status == "Out":
             out_names.add(pname)
-        elif inv.get("status") in ("Questionable", "Doubtful"):
+        elif status in ("Questionable", "Doubtful"):
             questionable_names.add(pname)
+
+    # Total per-game minutes across the roster; should be ~240 in practice.
+    total_min = 0.0
+    for p in roster_stats:
+        try:
+            total_min += float(p.get("MIN") or 0.0)
+        except (TypeError, ValueError):
+            continue
+    if total_min <= 0:
+        total_min = 1.0
+
     value = 0.0
     for p in roster_stats:
         nnorm = _normalize_name_for_match(p["player_name"])
         if nnorm in out_names:
+            # Fully out → no contribution
             continue
+
+        # Minutes share: starters ~0.15–0.2, rotation guys ~0.05–0.1, deep bench very small.
+        try:
+            p_min = float(p.get("MIN") or 0.0)
+        except (TypeError, ValueError):
+            p_min = 0.0
+        minute_share = max(0.0, p_min / total_min)
+        # Small floor so very low-minute players still have non-zero but tiny impact.
+        minute_share = max(minute_share, 0.02)
+
+        # Questionable / doubtful players at half strength.
         mult = 0.5 if nnorm in questionable_names else 1.0
+
         pid = p.get("player_id")
         recent = (recent_stats or {}).get(pid) if pid is not None else None
+
         for stat, w in weights.items():
             if stat == "MIN":
                 continue
-            season_val = p.get(stat) or 0
+            season_val = p.get(stat) or 0.0
             if recent and stat in recent:
-                # Blend season and recent (recent_weight toward recent)
-                blended = (1 - recent_weight) * season_val + recent_weight * (recent.get(stat) or 0)
-                value += mult * w * blended
+                blended = (1 - recent_weight) * season_val + recent_weight * (recent.get(stat) or 0.0)
             else:
-                value += mult * w * season_val
+                blended = season_val
+
+            value += mult * minute_share * w * blended
+
     return value, list(out_names)
 
 

@@ -23,15 +23,16 @@ RECENT_FORM_WEIGHT = 0.25
 # Rest / back-to-back
 REST_B2B_PENALTY_PTS = 2.0       # pts to subtract when team played yesterday (0 rest days)
 REST_EXTRA_BONUS_PTS = 0.5      # pts to add when team has 2+ days rest
-# Injuries (model): strength penalty per player
-INJURY_OUT_WEIGHT = 1.0         # full penalty for "Out"
-INJURY_QUESTIONABLE_WEIGHT = 0.4  # partial for "Questionable"
-INJURY_WEIGHT = 0.35            # multiplier: penalty = INJURY_WEIGHT * (out*1 + questionable*0.4)
+# Injuries (model): strength penalty per player – more punishing so missing starters matters more
+INJURY_OUT_WEIGHT = 1.5           # full penalty for "Out"
+INJURY_QUESTIONABLE_WEIGHT = 0.5  # partial for "Questionable"
+INJURY_WEIGHT = 0.6               # penalty ≈ 0.9 pts per Out player (plus lost player value)
 
 # Team offensive/defensive rating (from TeamEstimatedMetrics)
-ORTG_DRTG_WEIGHT = 0.015       # (ortg - drtg) scale: ~100 pts typical; 0.015 * 5 ≈ 0.075 strength
+ORTG_DRTG_WEIGHT = 0.015          # keep team-level impact modest
+
 # Available player value (weighted sum of non-injured player stats) — higher = more weight on who's playing
-PLAYER_VALUE_WEIGHT = 0.005    # increased so player capability and recent form matter more
+PLAYER_VALUE_WEIGHT = 0.01        # doubled: who is actually on the floor matters more
 
 # Win % curve: soften extremes so we rarely see 98% or 2%
 LOGISTIC_SCALE = 9            # larger = gentler curve (diff/9 instead of diff/5)

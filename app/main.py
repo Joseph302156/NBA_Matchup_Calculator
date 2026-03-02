@@ -5,6 +5,9 @@ Run from project root: uvicorn app.main:app --reload
 """
 import json
 import os
+
+from dotenv import load_dotenv
+load_dotenv()  # load .env from project root so OPENAI_API_KEY is available
 from datetime import date, timedelta
 from typing import Optional
 

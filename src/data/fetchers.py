@@ -323,6 +323,9 @@ def get_available_player_value(
     """
     if weights is None:
         weights = {"PTS": 1.0, "AST": 0.5, "REB": 0.4, "STL": 0.6, "BLK": 0.6}
+    # Put a bit more emphasis on assists / playmaking on top of whatever weights we got.
+    if "AST" in weights:
+        weights["AST"] *= 1.3
     if recent_weight is None:
         recent_weight = RECENT_STATS_WEIGHT
 
@@ -386,19 +389,18 @@ def get_available_player_value(
             effective = blended
             if stat == "PTS":
                 # Exponential scaling from 20+ PPG upward.
-                # We now want a milder curve where:
+                # We now want a bit more separation than before, roughly:
                 # - 20 PPG is baseline,
-                # - 27 PPG is ~4x as valuable as 20 PPG (not 10x),
-                # and intermediate values (23, 26, ...) grow faster than linear
-                # but not explosively.
+                # - 27 PPG is ~5x as valuable as 20 PPG (but still far below the old 10x),
+                # and intermediate values (23, 26, ...) grow faster than linear.
                 #
                 # effective = pts * exp(k * (pts - 20)),
-                # choose k so that effective(27) / effective(20) ≈ 4:
-                #   (27 * exp(k*7)) / (20 * exp(0)) = 4  ⇒ exp(k*7) = 80/27.
-                #   k = ln(80/27) / 7.
+                # choose k so that effective(27) / effective(20) ≈ 5:
+                #   (27 * exp(k*7)) / 20 = 5  ⇒ exp(k*7) = 100/27.
+                #   k = ln(100/27) / 7.
                 pts = max(0.0, blended)
                 if pts >= 20.0:
-                    k = math.log(80.0 / 27.0) / 7.0
+                    k = math.log(100.0 / 27.0) / 7.0
                     mult = math.exp(k * (pts - 20.0))
                     effective = pts * mult
                 else:

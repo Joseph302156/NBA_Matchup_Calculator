@@ -86,7 +86,7 @@ body {
   min-width: 240px;
   margin-left: -0.5in;
   margin-right: calc(0.5in);
-  max-height: 50vh; /* keep chat to ~half the viewport height on desktop */
+  max-height: 800px; /* keep chat to ~half the viewport height on desktop */
   align-self: flex-start;
   display: flex;
   flex-direction: column;

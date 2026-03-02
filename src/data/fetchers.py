@@ -362,8 +362,9 @@ def get_available_player_value(
         except (TypeError, ValueError):
             p_min = 0.0
         minute_share = max(0.0, p_min / total_min)
-        # Small floor so very low-minute players still have non-zero but tiny impact.
-        minute_share = max(minute_share, 0.02)
+        # Use minutes as a softer modifier: mostly driven by statlines, but starters
+        # still count more than deep bench. Range roughly [0.2, 1.0].
+        minute_factor = 0.2 + 0.8 * minute_share
 
         # Questionable / doubtful players at half strength.
         mult = 0.5 if nnorm in questionable_names else 1.0
@@ -381,20 +382,29 @@ def get_available_player_value(
                 blended = season_val
 
             # Make scoring and playmaking impact grow faster than linearly so
-            # 20 PPG is worth much more than twice 10 PPG, etc.
+            # high-usage scorers and creators are valued disproportionately more.
             effective = blended
             if stat == "PTS":
-                # Normalize around a 10 PPG baseline and square: 10 -> 10, 20 -> 40 (~4x), 5 -> 2.5.
-                baseline = 10.0
-                norm = max(0.0, blended / baseline)
-                effective = baseline * (norm ** 2)
+                # Piecewise exponential-ish scaling:
+                # - 20+ PPG gets a boost,
+                # - 25+ PPG is much higher,
+                # - 30+ PPG is worth ~4x a 25 PPG scorer.
+                pts = max(0.0, blended)
+                if pts >= 30:
+                    effective = pts * 4.0
+                elif pts >= 25:
+                    effective = pts * 2.5
+                elif pts >= 20:
+                    effective = pts * 1.5
+                else:
+                    effective = pts
             elif stat == "AST":
                 # Similar idea for assists; baseline around 5 APG.
                 baseline = 5.0
                 norm = max(0.0, blended / baseline)
                 effective = baseline * (norm ** 2)
 
-            value += mult * minute_share * w * effective
+            value += mult * minute_factor * w * effective
 
     return value, list(out_names)
 

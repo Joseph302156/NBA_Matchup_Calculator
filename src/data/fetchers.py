@@ -439,7 +439,8 @@ def get_available_player_value(
             for s in stat_keys:
                 if missing_stats[s] == 0.0:
                     continue
-                b[s] = b.get(s, 0.0) + missing_stats[s] * w_share
+                added = b.get(s, 0.0) + missing_stats[s] * w_share
+                b[s] = min(added, 4.0)  # cap redistributed stat boost at 4 per category
 
     # Total per-game minutes across the roster; should be ~240 in practice.
     total_min = 0.0

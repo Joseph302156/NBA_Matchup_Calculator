@@ -11,7 +11,8 @@ def current_season():
 # How many days ahead to consider "upcoming" games
 UPCOMING_DAYS = 3
 # Recent games for form (W/L record)
-RECENT_GAMES_N = 10
+# Focus on very recent performance rather than long season history.
+RECENT_GAMES_N = 5
 # Refresh: run every N minutes when in daemon mode (future)
 REFRESH_MINUTES = 30
 # NBA.com can rate-limit; delay between heavy requests (seconds)
@@ -20,7 +21,8 @@ REQUEST_DELAY = 0.6
 # Model: home court and form
 # Softer home-court advantage so venue matters less relative to who's playing.
 HOME_ADVANTAGE_PTS = 1.5
-RECENT_FORM_WEIGHT = 0.25
+# Heavier weight on recent form (last RECENT_GAMES_N games).
+RECENT_FORM_WEIGHT = 0.7
 # Rest / back-to-back
 REST_B2B_PENALTY_PTS = 2.0       # pts to subtract when team played yesterday (0 rest days)
 REST_EXTRA_BONUS_PTS = 0.5      # pts to add when team has 2+ days rest
@@ -31,6 +33,10 @@ INJURY_WEIGHT = 0.6               # penalty ≈ 0.9 pts per Out player (plus los
 
 # Team offensive/defensive rating (from TeamEstimatedMetrics)
 ORTG_DRTG_WEIGHT = 0.015          # keep team-level impact modest
+
+# Season-long team strength (PLUS_MINUS / PTS per game) relative weight.
+# < 1.0 so we significantly downweight full-season history vs. recent games + players.
+SEASON_STRENGTH_WEIGHT = 0.4
 
 # Available player value (weighted sum of non-injured player stats) — higher = more weight on who's playing
 PLAYER_VALUE_WEIGHT = 0.01        # doubled: who is actually on the floor matters more

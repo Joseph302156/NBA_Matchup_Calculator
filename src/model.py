@@ -19,6 +19,7 @@ from config import (
     LOGISTIC_SCALE,
     WIN_PCT_FLOOR,
     WIN_PCT_CEIL,
+    SEASON_STRENGTH_WEIGHT,
 )
 
 
@@ -81,31 +82,37 @@ def predict_game(
     home_stats = team_stats.get(hid, {})
     away_stats = team_stats.get(aid, {})
 
-    home_str = home_stats.get("PLUS_MINUS")
-    if home_str is None:
-        home_str = home_stats.get("PTS") or 0.0
+    # ----- Season-long team strength (heavily downweighted) -----
+    home_base = home_stats.get("PLUS_MINUS")
+    if home_base is None:
+        home_base = home_stats.get("PTS") or 0.0
     else:
-        home_str = float(home_str)
-    away_str = away_stats.get("PLUS_MINUS")
-    if away_str is None:
-        away_str = away_stats.get("PTS") or 0.0
+        home_base = float(home_base)
+    away_base = away_stats.get("PLUS_MINUS")
+    if away_base is None:
+        away_base = away_stats.get("PTS") or 0.0
     else:
-        away_str = float(away_str)
+        away_base = float(away_base)
 
     # Team offensive/defensive rating: net rating vs league (~100)
     home_od = ortg_drtg.get(hid, {})
     away_od = ortg_drtg.get(aid, {})
     home_net = (float(home_od.get("E_OFF_RATING", 0) or 0) - float(home_od.get("E_DEF_RATING", 0) or 0))
     away_net = (float(away_od.get("E_OFF_RATING", 0) or 0) - float(away_od.get("E_DEF_RATING", 0) or 0))
-    home_str += home_net * ORTG_DRTG_WEIGHT
-    away_str += away_net * ORTG_DRTG_WEIGHT
+    home_base += home_net * ORTG_DRTG_WEIGHT
+    away_base += away_net * ORTG_DRTG_WEIGHT
 
-    # Available player value (who's actually playing)
+    # Season strength is scaled down so history matters but much less than players + recent games.
+    home_str = home_base * SEASON_STRENGTH_WEIGHT
+    away_str = away_base * SEASON_STRENGTH_WEIGHT
+
+    # ----- Player-based component: who is actually available, minutes-weighted -----
     if available_value_home is not None:
         home_str += available_value_home * PLAYER_VALUE_WEIGHT
     if available_value_away is not None:
         away_str += available_value_away * PLAYER_VALUE_WEIGHT
 
+    # Home court advantage
     home_str += HOME_ADVANTAGE_PTS
 
     home_form_rate = _form_rate(recent_form.get(hid, []))

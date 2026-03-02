@@ -386,14 +386,19 @@ def get_available_player_value(
             effective = blended
             if stat == "PTS":
                 # Exponential scaling from 20+ PPG upward.
-                # We want something like:
-                # - baseline 20 PPG
-                # - 27 PPG ≈ 10x the value of 20 PPG
-                # Use: effective = pts * exp(k * (pts - 20)),
-                # where exp(k * 7) ≈ 10 ⇒ k = ln(10) / 7.
+                # We now want a milder curve where:
+                # - 20 PPG is baseline,
+                # - 27 PPG is ~4x as valuable as 20 PPG (not 10x),
+                # and intermediate values (23, 26, ...) grow faster than linear
+                # but not explosively.
+                #
+                # effective = pts * exp(k * (pts - 20)),
+                # choose k so that effective(27) / effective(20) ≈ 4:
+                #   (27 * exp(k*7)) / (20 * exp(0)) = 4  ⇒ exp(k*7) = 80/27.
+                #   k = ln(80/27) / 7.
                 pts = max(0.0, blended)
                 if pts >= 20.0:
-                    k = math.log(10.0) / 7.0
+                    k = math.log(80.0 / 27.0) / 7.0
                     mult = math.exp(k * (pts - 20.0))
                     effective = pts * mult
                 else:

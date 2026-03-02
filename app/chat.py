@@ -103,7 +103,7 @@ You are given per-player data for both teams: away_players and home_players. Eac
 - Answer "how has [player] been performing?" with concrete numbers: cite both season averages and last_5_avg when present, and note if they're Out or Questionable.
 - Answer "wouldn't [team] have a disadvantage because [player] is out?" by confirming the disadvantage, citing that player's season (and recent) impact and how the model treats Out players (they subtract value and scale down that team's ORtg/DRtg).
 
-Answer in 2–4 short paragraphs when explaining a pick or the model. Be concrete: cite the matchup data you're given (win%, ORtg/DRtg, who's out, individual player stats). If the user asks about a specific game, use the matchup for that game index (0-based)."""
+Answer in 2–4 short paragraphs when explaining a pick or the model. Be concrete: cite the matchup data you're given (win%, ORtg/DRtg, who's out, individual player stats). If the user asks about a specific game, use the matchup for that game index (0-based). The data you're given is always for the date shown as date_display (the results page the user has open). If they ask about a different date (e.g. 'For March 2 why...'), explain that you only have data for the loaded date and they should select that date on the home page to see those matchups."""
 
 
 def _static_reply(message: str, game_index: int, context: dict) -> str:
@@ -113,13 +113,43 @@ def _static_reply(message: str, game_index: int, context: dict) -> str:
     g = games[game_index] if 0 <= game_index < len(games) else (games[0] if games else None)
 
     if not g:
-        return "No matchup data is available for this date."
+        return (
+            "I don't have matchup data on this page. Make sure you've selected a date and the results have loaded "
+            "(you should see matchup cards). The data I use is always for the date shown at the top of this page — "
+            "if you asked about a specific date, pick that date from the home page and open the results, then ask again."
+        )
 
     away = g.get("away_tricode") or g.get("away_team") or "Away"
     home = g.get("home_tricode") or g.get("home_team") or "Home"
+    away_full = (g.get("away_team") or away).lower()
+    home_full = (g.get("home_team") or home).lower()
     pick = g.get("pick") or "—"
     win_home = (g.get("win_pct_home") or 0) * 100
     win_away = (g.get("win_pct_away") or 0) * 100
+
+    # "Why do the Warriors have 51%?" / "why does [team] have X% win probability?"
+    if re.search(r"why (do|does) .+ (have|has) .*%|win probability|win %", msg):
+        def _team_in_msg(tricode, full_name):
+            if not tricode and not full_name:
+                return False
+            tc = (tricode or "").lower()
+            fn = (full_name or "").lower()
+            return tc in msg or fn in msg or (fn and any(w in msg for w in fn.split() if len(w) > 2))
+        if _team_in_msg(g.get("away_tricode"), g.get("away_team")):
+            pct = win_away
+            team_label = away
+        elif _team_in_msg(g.get("home_tricode"), g.get("home_team")):
+            pct = win_home
+            team_label = home
+        else:
+            pct = None
+        if pct is not None:
+            return (
+                f"For this matchup ({away} @ {home}), {team_label} have a {pct:.1f}% win probability. "
+                "The model combines season strength (40% weight), availability-adjusted ORtg/DRtg, who's playing "
+                "(with extra weight on high scorers), last 5 games form, injuries, and rest. "
+                f"The pick is {pick}. For a longer explanation, set OPENAI_API_KEY."
+            )
 
     # Who's out
     if re.search(r"who('s|s| is) out|injur|out (for|tonight)|missing", msg):
@@ -198,6 +228,16 @@ def get_reply(message: str, game_index: int, context: dict) -> str:
     message = (message or "").strip()
     if not message:
         return "Ask a question about the matchup, the pick, or how the model works."
+
+    # No matchup data on this page — same message for both LLM and static so user knows to load a date
+    games = (context or {}).get("games") or []
+    if not games:
+        return (
+            "I don't have matchup data on this page. Make sure you've selected a date and the results have loaded "
+            "(you should see matchup cards). If you asked about a specific date (e.g. March 2), pick that date on the "
+            "home page, open the results, then ask your question again — I can only see the matchups for the date "
+            "currently shown."
+        )
 
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     if api_key:

@@ -210,7 +210,7 @@
     </div>
 
     <script>
-      window.__MATCHUP_CONTEXT__ = {{ chat_context | tojson }};
+      window.__MATCHUP_CONTEXT__ = {{ (chat_context or {}) | tojson }};
     </script>
     <script>
       (function() {

@@ -34,7 +34,7 @@ INJURY_WEIGHT = 0.6               # penalty ≈ 0.9 pts per Out player (plus los
 # Team offensive/defensive rating (from TeamEstimatedMetrics)
 # Slightly higher weight so team ORtg/DRtg (which already reflects the players'
 # combined impact) matters more relative to raw PPG alone.
-ORTG_DRTG_WEIGHT = 0.022          # was 0.015; bump to lean more on ORtg/DRtg
+ORTG_DRTG_WEIGHT = 0.030          # lean more on ORtg/DRtg (availability-adjusted)
 
 # Season-long team strength (PLUS_MINUS / PTS per game) relative weight.
 # < 1.0 so we significantly downweight full-season history vs. recent games + players.

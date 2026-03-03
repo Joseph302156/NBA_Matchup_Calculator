@@ -11,7 +11,17 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Optional (fallback injury source): `pip install nbainjuries` and Java 8+. Injuries are **primarily** from ESPN’s roster API (no Java needed); nbainjuries is used only if ESPN returns no data.
+Optional (fallback injury source): `pip install nbainjuries` and Java 8+. Injuries are **primarily** from ESPN’s **league injuries API** (no Java needed); nbainjuries is used only if ESPN returns no data.
+
+Create a `.env` file for the AI chat assistant (or export the variable in your shell):
+
+```bash
+cp .env.example .env
+# then edit .env and paste your key:
+# OPENAI_API_KEY=sk-...
+```
+
+The web app loads `.env` automatically via `python-dotenv` (`load_dotenv()` in `app/main.py`).
 
 ## Web app (full-stack)
 
@@ -22,6 +32,13 @@ uvicorn app.main:app --reload
 ```
 
 Then open http://127.0.0.1:8000 — choose a date and click **Calculate predictions**. Results show each game: away @ home, win % bar, pick, team ORtg/DRtg, full roster with MIN/PTS/AST/REB/STL/BLK and Playing/Out/Questionable status, and injury report.
+
+On the right side of the results page there is an **AI assistant chat panel**. It uses OpenAI (model `gpt-4o-mini` by default) plus the current matchup context to answer questions about:
+
+- Why a team is favored, which players matter most, how injuries/rest affect the edge
+- How the model works for this specific game
+
+If `OPENAI_API_KEY` is not set, the chat panel will tell you to configure the key instead of calling the API.
 
 ## Run (CLI)
 
@@ -51,8 +68,7 @@ python main.py --json       # machine-readable JSON
 | Recent form | TeamGameLog (last N games) | Win rate in last 10 games |
 | Home/away | Schedule | Home-court advantage (~2.5 pts) |
 | **Rest / back-to-back** | TeamGameLog last game date | B2B (0 rest): −2 pts; 2+ days rest: +0.5 pts |
-| **Injuries** | **ESPN** roster API (primary), `nbainjuries` (fallback) | Out/Doubtful/Questionable by **player name**; matched to roster; no Java required for ESPN |
-| **Long-term / no recent games** | `nba_api` LeagueGameLog (player) | Players with **no game in 14+ days** (or none this season) are shown as Out so long-term injured aren’t shown as Playing |
+| **Injuries** | **ESPN** league injuries API (primary), `nbainjuries` (fallback) | League-wide feed of Out/Doubtful/Questionable; mapped from ESPN team ids/abbrevs to `nba_api` ids (handles GS/GSW, NO/NOP, etc.); no Java required for ESPN |
 | **Team ORtg/DRtg** | TeamEstimatedMetrics | E_OFF_RATING, E_DEF_RATING per team |
 | **Player stats** | CommonTeamRoster + LeagueDashPlayerStats (PerGame) | Season MIN, PTS, AST, REB, STL, BLK; blended with **last 5 games** (LeagueGameLog) so recent form matters; injured players excluded from "available value" |
 | **Stat importance** | `src/analysis/stat_importance.py` | Correlation of team PTS/AST/REB/STL/BLK with W_PCT → weights for player contribution |

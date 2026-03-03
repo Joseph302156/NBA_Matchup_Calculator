@@ -83,25 +83,27 @@ body {
 }
 
 .chat-panel {
-  flex: 0 0 calc(35% - 0.15in);
+  flex: 0 0 auto;
+  width: calc(35% - 0.15in);
   min-width: 240px;
   margin-left: -0.5in;
   margin-right: calc(0.5in);
-  height: 50vh !important;
-  max-height: 50vh !important;
+  height: 50vh;
+  max-height: 50vh;
   min-height: 200px;
   align-self: flex-start;
-  flex-shrink: 0;
   position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .chat-panel__header {
-  position: relative;
+  flex-shrink: 0;
   z-index: 1;
   padding: 0.75rem 1rem;
   font-size: 0.9375rem;
@@ -109,16 +111,12 @@ body {
   color: var(--text);
   border-bottom: 1px solid var(--border);
   background: var(--surface);
-  flex-shrink: 0;
 }
 
-/* Absolute positioning so Safari respects height and scrolls (flex + min-height:0 is unreliable in Safari) */
+/* Scrollable message area: fixed height region, scroll when content overflows */
 .chat-panel__messages {
-  position: absolute;
-  top: 2.75rem;
-  left: 0;
-  right: 0;
-  bottom: 3.25rem;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 1rem;
@@ -129,10 +127,7 @@ body {
 }
 
 .chat-panel__input-wrap {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
   z-index: 1;
   display: flex;
   gap: 0.5rem;
@@ -543,7 +538,7 @@ body {
 @media (max-width: 900px) {
   .results-row { flex-direction: column; }
   .results-panel { width: 100%; flex: 1 1 auto; padding-right: 0; }
-  .chat-panel { width: 100%; flex: 0 0 auto; height: 40vh; min-height: 220px; max-height: 40vh; }
+  .chat-panel { width: 100%; flex: 0 0 auto; height: 40vh; min-height: 220px; max-height: 40vh; display: flex; flex-direction: column; }
   .matchup-strip {
     overflow-x: auto;
     flex-wrap: nowrap;

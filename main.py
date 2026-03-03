@@ -18,7 +18,9 @@ from src.data.fetchers import (
     get_rest_days,
     get_team_ortg_drtg,
     get_available_player_value,
+    get_player_last_game_dates,
     get_player_recent_stats,
+    augment_injuries_with_recent_games,
 )
 from src.analysis.stat_importance import get_player_stat_weights
 from src.model import predict_game
@@ -48,6 +50,9 @@ def main():
     recent_form = {tid: get_recent_form(tid, RECENT_GAMES_N) for tid in team_ids}
     injuries = get_injuries()
     data_cache = {}
+    player_last_game = get_player_last_game_dates(data_cache)
+    if player_last_game:
+        augment_injuries_with_recent_games(injuries, team_ids, player_last_game)
     try:
         player_recent = get_player_recent_stats(data_cache)
     except Exception:

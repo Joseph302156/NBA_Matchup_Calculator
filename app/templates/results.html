@@ -246,7 +246,7 @@
           function setChatPanelHeight() {
             if (!chatPanel) return;
             var vh = window.innerHeight;
-            var targetHeight = Math.round(vh * 1.5);
+            var targetHeight = Math.round(vh * 0.8);
             chatPanel.style.height = targetHeight + 'px';
             chatPanel.style.maxHeight = targetHeight + 'px';
             chatPanel.style.minHeight = Math.min(450, targetHeight) + 'px';

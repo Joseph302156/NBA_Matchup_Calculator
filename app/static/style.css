@@ -88,9 +88,9 @@ body {
   min-width: 240px;
   margin-left: -0.5in;
   margin-right: calc(0.5in);
-  height: 550vh;
-  max-height: 700vh;
-  min-height: px;
+  height: 175vh;
+  max-height: 175vh;
+  min-height: 450px;
   align-self: flex-start;
   position: relative;
   background: var(--surface);

@@ -242,6 +242,15 @@
         var chatSend = document.getElementById('chat-send');
         var chatContext = window.__MATCHUP_CONTEXT__ || { games: [] };
         if (chatMessages && chatInput && chatSend) {
+          var chatPanel = chatMessages.closest('.chat-panel');
+          function setChatPanelHeight() {
+            if (!chatPanel) return;
+            var vh = window.innerHeight;
+            var targetHeight = Math.round(vh * 1.5);
+            chatPanel.style.height = targetHeight + 'px';
+            chatPanel.style.maxHeight = targetHeight + 'px';
+            chatPanel.style.minHeight = Math.min(450, targetHeight) + 'px';
+          }
           function lockMessagesHeight() {
             var panel = chatMessages.closest('.chat-panel');
             if (!panel) return;
@@ -304,7 +313,9 @@
           chatInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
           });
+          setChatPanelHeight();
           lockMessagesHeight();
+          window.addEventListener('resize', function() { setChatPanelHeight(); lockMessagesHeight(); });
         }
       })();
     </script>

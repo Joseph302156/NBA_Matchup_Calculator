@@ -778,6 +778,8 @@ def apply_game_day_availability(injuries, game_day_availability):
 def _espn_team_id_to_nba_id():
     """Map ESPN API team id -> nba_api team id. Fetches ESPN teams list once."""
     nba_by_abbrev = {t["abbreviation"]: t["id"] for t in static_teams.get_teams()}
+    # ESPN uses different abbreviations for some teams; map to nba_api abbreviation
+    espn_abbr_to_nba = {"GS": "GSW", "NO": "NOP", "NY": "NYK", "SA": "SAS", "UTAH": "UTA", "WSH": "WAS"}
     try:
         r = requests.get(
             "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams",
@@ -802,10 +804,12 @@ def _espn_team_id_to_nba_id():
             continue
         espn_id = team.get("id")
         abbr = (team.get("abbreviation") or "").strip()
-        if espn_id is not None and abbr:
-            nba_id = nba_by_abbrev.get(abbr)
-            if nba_id is not None:
-                out[str(espn_id)] = nba_id
+        if espn_id is None or not abbr:
+            continue
+        nba_abbr = espn_abbr_to_nba.get(abbr, abbr)
+        nba_id = nba_by_abbrev.get(nba_abbr)
+        if nba_id is not None:
+            out[str(espn_id)] = nba_id
     return out
 
 

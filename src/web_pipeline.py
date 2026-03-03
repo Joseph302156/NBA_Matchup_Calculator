@@ -232,11 +232,33 @@ def build_predictions_for_date(target_date):
                 a, h = float(a), float(h)
             except (TypeError, ValueError):
                 a, h = 0, 0
-            total = a + h
-            if total <= 0:
-                comp["bars"][k] = {"away_pct": 50, "home_pct": 50}
+            # For DRtg, lower is better defense, so invert for the bar calculation
+            if k == "DRtg":
+                if a > 0:
+                    a_eff = 1.0 / a
+                else:
+                    a_eff = 0.0
+                if h > 0:
+                    h_eff = 1.0 / h
+                else:
+                    h_eff = 0.0
+                total = a_eff + h_eff
+                if total <= 0:
+                    comp["bars"][k] = {"away_pct": 50, "home_pct": 50}
+                else:
+                    comp["bars"][k] = {
+                        "away_pct": round(a_eff / total * 100, 1),
+                        "home_pct": round(h_eff / total * 100, 1),
+                    }
             else:
-                comp["bars"][k] = {"away_pct": round(a / total * 100, 1), "home_pct": round(h / total * 100, 1)}
+                total = a + h
+                if total <= 0:
+                    comp["bars"][k] = {"away_pct": 50, "home_pct": 50}
+                else:
+                    comp["bars"][k] = {
+                        "away_pct": round(a / total * 100, 1),
+                        "home_pct": round(h / total * 100, 1),
+                    }
 
     return {
         "date": date_str,

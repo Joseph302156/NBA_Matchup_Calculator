@@ -32,16 +32,17 @@ INJURY_QUESTIONABLE_WEIGHT = 0.5  # partial for "Questionable"
 INJURY_WEIGHT = 0.6               # penalty ≈ 0.9 pts per Out player (plus lost player value)
 
 # Team offensive/defensive rating (from TeamEstimatedMetrics)
-# Slightly higher weight so team ORtg/DRtg (which already reflects the players'
-# combined impact) matters more relative to raw PPG alone.
-ORTG_DRTG_WEIGHT = 0.030          # lean more on ORtg/DRtg (availability-adjusted)
+# Lean more on team ORtg/DRtg (which already reflects the players'
+# combined impact) so results are a bit more team-driven vs. single-star heavy.
+ORTG_DRTG_WEIGHT = 0.060          # was 0.030
 
 # Season-long team strength (PLUS_MINUS / PTS per game) relative weight.
 # < 1.0 so we significantly downweight full-season history vs. recent games + players.
 SEASON_STRENGTH_WEIGHT = 0.4
 
 # Available player value (weighted sum of non-injured player stats) — higher = more weight on who's playing
-PLAYER_VALUE_WEIGHT = 0.01        # doubled: who is actually on the floor matters more
+# Nudged down slightly so a single 30 PPG star pulls less relative to team ORtg/DRtg.
+PLAYER_VALUE_WEIGHT = 0.01      # was 0.01
 
 # Win % curve: soften extremes so we rarely see 98% or 2%
 LOGISTIC_SCALE = 9            # larger = gentler curve (diff/9 instead of diff/5)

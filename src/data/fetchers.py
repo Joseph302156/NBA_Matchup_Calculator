@@ -811,56 +811,63 @@ def _espn_team_id_to_nba_id():
 
 def get_injuries_espn():
     """
-    Injury report from ESPN roster API. Each team roster includes athletes with
-    injuries[] (status + date). Returns dict team_id (nba_api id) -> list of
-    {'status': 'Out'|'Doubtful'|'Questionable', 'player_name': str}.
+    Injury report from ESPN league injuries API (single source: who is Out/Questionable right now).
+    Same data as the ESPN injury report page; updated when players are upgraded to play.
+    Returns dict team_id (nba_api id) -> list of {'status': 'Out'|'Doubtful'|'Questionable', 'player_name': str}.
     """
     espn_to_nba = _espn_team_id_to_nba_id()
     if not espn_to_nba:
         return {}
+    try:
+        time.sleep(0.2)
+        r = requests.get(
+            "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/injuries",
+            timeout=15,
+        )
+        r.raise_for_status()
+        data = r.json()
+    except Exception:
+        return {}
+    teams_list = data.get("injuries")
+    if not isinstance(teams_list, list):
+        return {}
     by_team = {}
-    for espn_id_str, nba_id in espn_to_nba.items():
-        try:
-            time.sleep(0.15)
-            r = requests.get(
-                f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/{espn_id_str}/roster",
-                timeout=10,
-            )
-            r.raise_for_status()
-            data = r.json()
-        except Exception:
+    for item in teams_list:
+        if not isinstance(item, dict):
             continue
-        athletes = data.get("athletes") or []
-        for ath in athletes:
-            injuries = ath.get("injuries") or []
-            if not injuries:
+        espn_id = item.get("id")
+        if espn_id is None:
+            continue
+        nba_id = espn_to_nba.get(str(espn_id))
+        if nba_id is None:
+            continue
+        injuries = item.get("injuries") or []
+        for rec in injuries:
+            if not isinstance(rec, dict):
                 continue
-            full_name = (ath.get("fullName") or ath.get("displayName") or "").strip()
-            if not full_name:
+            ath = rec.get("athlete") or {}
+            name = (ath.get("displayName") or f"{ath.get('firstName', '')} {ath.get('lastName', '')}".strip() or "").strip()
+            if not name:
                 continue
-            # Use first injury entry; status can be "Out", "Doubtful", "Questionable", "Day-To-Day", etc.
-            raw_status = (injuries[0].get("status") or "").strip()
+            raw_status = (rec.get("status") or "").strip()
             if not raw_status:
                 continue
-            status = raw_status
-            if status.lower() in ("out", "out for season"):
+            if raw_status.lower() in ("out", "out for season"):
                 status = "Out"
-            elif status.lower() in ("doubtful",):
+            elif raw_status.lower() == "doubtful":
                 status = "Doubtful"
             else:
-                status = "Questionable"  # Questionable, Day-To-Day, etc.
-            by_team.setdefault(nba_id, []).append({"status": status, "player_name": full_name})
+                status = "Questionable"  # Day-To-Day, Questionable, etc.
+            by_team.setdefault(nba_id, []).append({"status": status, "player_name": name})
     return by_team
 
 
 def get_injuries():
     """
-    Injury report: one source of truth from ESPN roster. Anyone with injuries[] is
-    Out/Doubtful/Questionable; everyone else is treated as Playing. Falls back to
-    nbainjuries if ESPN returns nothing. Call augment_injuries_with_recent_games()
-    after this so players with no game in 14+ days are also marked Out (preexisting
-    / long-term injured who may not appear on the daily report).
+    Injury report: single source from ESPN league injuries API (same as ESPN injury report page).
+    Who is Out / Questionable / Doubtful at the moment we check; updated when players are cleared to play.
     Returns dict team_id -> list of {'status': 'Out'|'Doubtful'|'Questionable', 'player_name': str}.
+    Falls back to nbainjuries if ESPN returns nothing.
     """
     injuries = get_injuries_espn()
     if injuries:

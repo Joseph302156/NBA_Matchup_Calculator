@@ -13,11 +13,7 @@ from src.data.fetchers import (
     get_team_ortg_drtg,
     get_available_player_value,
     get_roster_with_stats,
-    get_player_last_game_dates,
     get_player_recent_stats,
-    augment_injuries_with_recent_games,
-    get_game_day_availability,
-    apply_game_day_availability,
     _normalize_name_for_match,
 )
 from src.analysis.stat_importance import get_player_stat_weights
@@ -126,20 +122,6 @@ def build_predictions_for_date(target_date):
     recent_form = {tid: get_recent_form(tid, RECENT_GAMES_N) for tid in team_ids}
     injuries = get_injuries()
     data_cache = {}
-    try:
-        player_last_game = get_player_last_game_dates(data_cache)
-        if player_last_game:
-            augment_injuries_with_recent_games(injuries, team_ids, player_last_game)
-        # When viewing today: remove from injury list anyone on today's game roster (upgraded to play)
-        if date_obj == datetime.now().date():
-            try:
-                game_day_avail = get_game_day_availability(date_obj)
-                if game_day_avail:
-                    apply_game_day_availability(injuries, game_day_avail)
-            except Exception:
-                pass
-    except Exception:
-        pass
     last_game_dates = {}
     ortg_drtg = get_team_ortg_drtg(data_cache)
     try:

@@ -113,9 +113,10 @@ body {
   background: var(--surface);
 }
 
-/* Scrollable message area: fixed height region, scroll when content overflows */
+/* Scrollable message area: fixed height so content never expands the panel */
 .chat-panel__messages {
-  flex: 1 1 0;
+  height: calc(50vh - 6.5rem);
+  max-height: calc(50vh - 6.5rem);
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -159,7 +160,13 @@ body {
   color: var(--text);
 }
 
-.chat-msg__text { white-space: pre-wrap; word-break: break-word; }
+.chat-msg__text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  /* Prevent long content from forcing parent to grow; scroll lives in .chat-panel__messages */
+  min-width: 0;
+  overflow-wrap: break-word;
+}
 
 
 .chat-panel__input {
@@ -539,6 +546,7 @@ body {
   .results-row { flex-direction: column; }
   .results-panel { width: 100%; flex: 1 1 auto; padding-right: 0; }
   .chat-panel { width: 100%; flex: 0 0 auto; height: 40vh; min-height: 220px; max-height: 40vh; display: flex; flex-direction: column; }
+  .chat-panel__messages { height: calc(40vh - 6.5rem); max-height: calc(40vh - 6.5rem); }
   .matchup-strip {
     overflow-x: auto;
     flex-wrap: nowrap;

@@ -242,6 +242,17 @@
         var chatSend = document.getElementById('chat-send');
         var chatContext = window.__MATCHUP_CONTEXT__ || { games: [] };
         if (chatMessages && chatInput && chatSend) {
+          function lockMessagesHeight() {
+            var panel = chatMessages.closest('.chat-panel');
+            if (!panel) return;
+            var header = panel.querySelector('.chat-panel__header');
+            var inputWrap = panel.querySelector('.chat-panel__input-wrap');
+            var used = (header ? header.offsetHeight : 0) + (inputWrap ? inputWrap.offsetHeight : 0);
+            var h = Math.max(0, panel.offsetHeight - used);
+            chatMessages.style.height = h + 'px';
+            chatMessages.style.maxHeight = h + 'px';
+            chatMessages.style.minHeight = '0';
+          }
           function addMessage(text, isBot) {
             var div = document.createElement('div');
             div.className = 'chat-msg chat-msg--' + (isBot ? 'bot' : 'user');
@@ -250,6 +261,7 @@
             inner.textContent = text;
             div.appendChild(inner);
             chatMessages.appendChild(div);
+            lockMessagesHeight();
             chatMessages.scrollTop = chatMessages.scrollHeight;
           }
           function setLastBotMessage(text) {
@@ -259,6 +271,8 @@
               var span = last.querySelector('.chat-msg__text');
               if (span) span.textContent = text;
             }
+            lockMessagesHeight();
+            chatMessages.scrollTop = chatMessages.scrollHeight;
           }
           function sendMessage() {
             var text = (chatInput.value || '').trim();
@@ -290,6 +304,7 @@
           chatInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
           });
+          lockMessagesHeight();
         }
       })();
     </script>

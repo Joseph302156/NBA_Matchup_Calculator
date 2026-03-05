@@ -363,35 +363,42 @@
         }
 
         function drawPlayerChart(statKey) {
-          if (!playerCardChart || !currentPlayerData || !currentPlayerGames.length) return;
-          var statLabels = { pts: 'PTS', ast: 'AST', reb: 'REB', stl: 'STL', blk: 'BLK' };
+          if (!playerCardChart || !currentPlayerData) return;
           var seasonAvg = currentPlayerData[statKey] != null ? Number(currentPlayerData[statKey]) : 0;
-          var values = currentPlayerGames.map(function(g) { return g[statKey] != null ? Number(g[statKey]) : 0; });
+          var values = (currentPlayerGames || []).map(function(g) { return g[statKey] != null ? Number(g[statKey]) : 0; });
           var last5Sum = values.reduce(function(a, b) { return a + b; }, 0);
           var last5Avg = values.length ? last5Sum / values.length : 0;
-          var maxVal = Math.max(seasonAvg, last5Avg, Math.max.apply(null, values), 1);
-          var scale = maxVal * 1.15 || 1;
-          var gamesReversed = currentPlayerGames.slice().reverse();
+          var maxVal = Math.max(seasonAvg, last5Avg, Math.max.apply(null, values.length ? values : [0]), 1);
+          var scale = maxVal * 1.2 || 1;
+          var gamesReversed = (currentPlayerGames || []).slice().reverse();
           playerCardChart.innerHTML = '';
           var chartInner = document.createElement('div');
           chartInner.className = 'player-card__chart-inner';
-          gamesReversed.forEach(function(g, i) {
-            var v = g[statKey] != null ? Number(g[statKey]) : 0;
-            var pct = (v / scale) * 100;
-            var bar = document.createElement('div');
-            bar.className = 'player-card__bar-wrap';
-            bar.innerHTML = '<div class="player-card__bar" style="height:' + pct + '%" title="' + g.date + ': ' + v + '"></div><span class="player-card__bar-label">' + (g.date ? g.date.slice(5) : 'G' + (i+1)) + '</span>';
-            chartInner.appendChild(bar);
-          });
-          var refLines = document.createElement('div');
-          refLines.className = 'player-card__ref-lines';
-          var pctSeason = (seasonAvg / scale) * 100;
-          var pctLast5 = (last5Avg / scale) * 100;
-          refLines.innerHTML = '<div class="player-card__ref-line player-card__ref-line--season" style="bottom:' + pctSeason + '%" title="Season avg: ' + seasonAvg.toFixed(1) + '"></div><div class="player-card__ref-line player-card__ref-line--last5" style="bottom:' + pctLast5 + '%" title="Last 5 avg: ' + last5Avg.toFixed(1) + '"></div>';
-          playerCardChart.appendChild(chartInner);
-          playerCardChart.appendChild(refLines);
-          if (playerCardLegend) {
+          if (!gamesReversed.length) {
+            chartInner.innerHTML = '<p class="player-card__chart-empty">No recent games</p>';
+          } else {
+            gamesReversed.forEach(function(g, i) {
+              var v = g[statKey] != null ? Number(g[statKey]) : 0;
+              var pct = (v / scale) * 100;
+              var barWrap = document.createElement('div');
+              barWrap.className = 'player-card__bar-wrap';
+              barWrap.innerHTML = '<div class="player-card__bar-spacer"></div><div class="player-card__bar-value">' + (Number(v) === v && v % 1 !== 0 ? v.toFixed(1) : v) + '</div><div class="player-card__bar" style="height:' + Math.max(pct, 4) + '%" title="' + (g.date || '') + ': ' + v + '"></div><span class="player-card__bar-label">' + (g.date ? g.date.slice(5) : 'G' + (i+1)) + '</span>';
+              chartInner.appendChild(barWrap);
+            });
+            var refLines = document.createElement('div');
+            refLines.className = 'player-card__ref-lines';
+            var pctSeason = (seasonAvg / scale) * 100;
+            var pctLast5 = (last5Avg / scale) * 100;
+            refLines.innerHTML = '<div class="player-card__ref-line player-card__ref-line--season" style="bottom:' + pctSeason + '%" title="Season avg: ' + seasonAvg.toFixed(1) + '"></div><div class="player-card__ref-line player-card__ref-line--last5" style="bottom:' + pctLast5 + '%" title="Last 5 avg: ' + last5Avg.toFixed(1) + '"></div>';
+            playerCardChart.appendChild(chartInner);
+            playerCardChart.appendChild(refLines);
+          } else {
+            playerCardChart.appendChild(chartInner);
+          }
+          if (playerCardLegend && gamesReversed.length) {
             playerCardLegend.innerHTML = '<span class="player-card__legend-item player-card__ref-line--season"></span> Season avg ' + seasonAvg.toFixed(1) + ' &nbsp; <span class="player-card__legend-item player-card__ref-line--last5"></span> Last 5 avg ' + last5Avg.toFixed(1);
+          } else if (playerCardLegend) {
+            playerCardLegend.innerHTML = '';
           }
         }
 

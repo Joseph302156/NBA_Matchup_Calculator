@@ -198,14 +198,18 @@
     </section>
         <div id="player-card" class="player-card" style="display: none;">
           <button type="button" class="player-card__back" id="player-card-back">← Back to matchup</button>
-          <h3 class="player-card__name" id="player-card-name"></h3>
-          <p class="player-card__meta" id="player-card-meta"></p>
-          <table class="player-card__season">
-            <thead><tr><th>Stat</th><th>Season avg</th></tr></thead>
-            <tbody id="player-card-season-tbody"></tbody>
-          </table>
+          <div class="player-card__header">
+            <div class="player-card__header-info">
+              <h2 class="player-card__name" id="player-card-name"></h2>
+              <p class="player-card__meta" id="player-card-meta"></p>
+            </div>
+            <table class="player-card__season">
+              <thead><tr><th>Stat</th><th>Season avg</th></tr></thead>
+              <tbody id="player-card-season-tbody"></tbody>
+            </table>
+          </div>
           <div class="player-card__chart-section">
-            <p class="player-card__chart-label">Last 5 games — select stat:</p>
+            <p class="player-card__chart-label">Last 5 games — select stat</p>
             <div class="player-card__stat-tabs" id="player-card-stat-tabs">
               <button type="button" class="player-card__stat-tab active" data-stat="pts">PTS</button>
               <button type="button" class="player-card__stat-tab" data-stat="ast">AST</button>
@@ -213,8 +217,21 @@
               <button type="button" class="player-card__stat-tab" data-stat="stl">STL</button>
               <button type="button" class="player-card__stat-tab" data-stat="blk">BLK</button>
             </div>
-            <div class="player-card__chart" id="player-card-chart"></div>
-            <div class="player-card__legend" id="player-card-legend"></div>
+            <div class="player-card__chart-row">
+              <div class="player-card__chart-col player-card__chart-col--graph">
+                <div class="player-card__chart" id="player-card-chart"></div>
+              </div>
+              <div class="player-card__chart-col player-card__chart-col--table">
+                <table class="player-card__game-log">
+                  <thead><tr><th>Date</th><th>Opp</th><th id="player-card-game-log-stat-hdr">PTS</th></tr></thead>
+                  <tbody id="player-card-game-log-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="player-card__avg-box">
+              <span class="player-card__avg-label">Avg. Last 5</span>
+              <span class="player-card__avg-value" id="player-card-avg-value">—</span>
+            </div>
           </div>
         </div>
         </div>
@@ -350,10 +367,13 @@
         var playerCardMeta = document.getElementById('player-card-meta');
         var playerCardSeasonTbody = document.getElementById('player-card-season-tbody');
         var playerCardChart = document.getElementById('player-card-chart');
-        var playerCardLegend = document.getElementById('player-card-legend');
+        var playerCardGameLogTbody = document.getElementById('player-card-game-log-tbody');
+        var playerCardGameLogStatHdr = document.getElementById('player-card-game-log-stat-hdr');
+        var playerCardAvgValue = document.getElementById('player-card-avg-value');
         var playerCardStatTabs = document.getElementById('player-card-stat-tabs');
         var currentPlayerData = null;
         var currentPlayerGames = [];
+        var statLabels = { pts: 'PTS', ast: 'AST', reb: 'REB', stl: 'STL', blk: 'BLK' };
 
         function showPlayerCard() {
           if (gamesContainer) gamesContainer.style.display = 'none';
@@ -373,33 +393,55 @@
           var maxVal = Math.max(seasonAvg, last5Avg, Math.max.apply(null, values.length ? values : [0]), 1);
           var scale = maxVal * 1.2 || 1;
           var gamesReversed = (currentPlayerGames || []).slice().reverse();
+          var chartHeightPx = 220;
           playerCardChart.innerHTML = '';
-          var chartInner = document.createElement('div');
-          chartInner.className = 'player-card__chart-inner';
-          if (!gamesReversed.length) {
-            chartInner.innerHTML = '<p class="player-card__chart-empty">No recent games</p>';
-          } else {
-            gamesReversed.forEach(function(g, i) {
+          if (playerCardGameLogStatHdr) playerCardGameLogStatHdr.textContent = statLabels[statKey] || statKey.toUpperCase();
+          if (playerCardAvgValue) playerCardAvgValue.textContent = gamesReversed.length ? last5Avg.toFixed(1) : '—';
+          if (playerCardGameLogTbody) {
+            playerCardGameLogTbody.innerHTML = '';
+            gamesReversed.slice().reverse().forEach(function(g) {
               var v = g[statKey] != null ? Number(g[statKey]) : 0;
-              var pct = (v / scale) * 100;
-              var barWrap = document.createElement('div');
-              barWrap.className = 'player-card__bar-wrap';
-              barWrap.innerHTML = '<div class="player-card__bar-spacer"></div><div class="player-card__bar-value">' + (Number(v) === v && v % 1 !== 0 ? v.toFixed(1) : v) + '</div><div class="player-card__bar" style="height:' + Math.max(pct, 4) + '%" title="' + (g.date || '') + ': ' + v + '"></div><span class="player-card__bar-label">' + (g.date ? g.date.slice(5) : 'G' + (i+1)) + '</span>';
-              chartInner.appendChild(barWrap);
+              var displayVal = Number(v) === v && v % 1 !== 0 ? v.toFixed(1) : v;
+              var dateStr = (g.date || '').slice(5);
+              var m = (g.matchup || '').trim();
+              var opp = '—';
+              if (m) {
+                var parts = m.split(/\s*(?:@|vs\.?)\s*/i);
+                opp = (parts[1] || parts[0] || '').trim() || '—';
+              }
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + dateStr + '</td><td>' + opp + '</td><td>' + displayVal + '</td>';
+              playerCardGameLogTbody.appendChild(tr);
             });
-            var refLines = document.createElement('div');
-            refLines.className = 'player-card__ref-lines';
-            var pctSeason = (seasonAvg / scale) * 100;
-            var pctLast5 = (last5Avg / scale) * 100;
-            refLines.innerHTML = '<div class="player-card__ref-line player-card__ref-line--season" style="bottom:' + pctSeason + '%" title="Season avg: ' + seasonAvg.toFixed(1) + '"></div><div class="player-card__ref-line player-card__ref-line--last5" style="bottom:' + pctLast5 + '%" title="Last 5 avg: ' + last5Avg.toFixed(1) + '"></div>';
-            playerCardChart.appendChild(chartInner);
-            playerCardChart.appendChild(refLines);
           }
-          if (playerCardLegend && gamesReversed.length) {
-            playerCardLegend.innerHTML = '<span class="player-card__legend-item player-card__ref-line--season"></span> Season avg ' + seasonAvg.toFixed(1) + '\u00A0\u00A0<span class="player-card__legend-item player-card__ref-line--last5"></span> Last 5 avg ' + last5Avg.toFixed(1);
-          } else if (playerCardLegend) {
-            playerCardLegend.innerHTML = '';
+          if (!gamesReversed.length) {
+            playerCardChart.innerHTML = '<p class="player-card__chart-empty">No recent games</p>';
+            return;
           }
+          var yAxisSteps = [0];
+          var step = scale / 4;
+          for (var s = 1; s <= 4; s++) yAxisSteps.push(Math.round(step * s * 10) / 10);
+          var yAxisEl = document.createElement('div');
+          yAxisEl.className = 'player-card__y-axis';
+          yAxisSteps.slice().reverse().forEach(function(tick) {
+            var span = document.createElement('span');
+            span.className = 'player-card__y-tick';
+            span.textContent = tick;
+            yAxisEl.appendChild(span);
+          });
+          playerCardChart.appendChild(yAxisEl);
+          var barsWrap = document.createElement('div');
+          barsWrap.className = 'player-card__chart-inner';
+          gamesReversed.forEach(function(g, i) {
+            var v = g[statKey] != null ? Number(g[statKey]) : 0;
+            var heightPx = Math.max((v / scale) * chartHeightPx, 8);
+            var barWrap = document.createElement('div');
+            barWrap.className = 'player-card__bar-wrap';
+            var labelDate = (g.date || '').slice(5) || ('G' + (i + 1));
+            barWrap.innerHTML = '<div class="player-card__bar-spacer"></div><div class="player-card__bar" style="height:' + heightPx + 'px" title="' + (g.date || '') + ': ' + v + '"></div><span class="player-card__bar-label">' + labelDate + '</span>';
+            barsWrap.appendChild(barWrap);
+          });
+          playerCardChart.appendChild(barsWrap);
         }
 
         function setActiveStatTab(statKey) {

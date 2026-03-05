@@ -669,6 +669,7 @@ def get_player_last_n_game_logs(player_id, n=5):
         return []
     pid_col = "PLAYER_ID" if "PLAYER_ID" in df.columns else ("Player_ID" if "Player_ID" in df.columns else None)
     date_col = "GAME_DATE" if "GAME_DATE" in df.columns else None
+    matchup_col = "MATCHUP" if "MATCHUP" in df.columns else None
     stat_cols = ["MIN", "PTS", "AST", "REB", "STL", "BLK"]
     if pid_col is None or date_col is None or any(c not in df.columns for c in stat_cols):
         return []
@@ -683,8 +684,10 @@ def get_player_last_n_game_logs(player_id, n=5):
         try:
             d = row["_date"]
             date_str = d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10]
+            matchup = str(row.get(matchup_col) or "") if matchup_col else ""
             out.append({
                 "date": date_str,
+                "matchup": matchup,
                 "min": round(float(row.get("MIN") or 0), 1),
                 "pts": round(float(row.get("PTS") or 0), 1),
                 "ast": round(float(row.get("AST") or 0), 1),

@@ -297,10 +297,14 @@ body {
 .player-card__season td { font-weight: 700; color: var(--text); }
 .player-card__chart-section {
   margin-top: 0;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: calc(100% - 2in);
   padding: 1.5rem;
   background: rgba(0, 0, 0, 0.25);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
+  box-sizing: border-box;
 }
 .player-card__chart-label {
   margin: 0 0 0.75rem 0;
@@ -388,6 +392,27 @@ body {
   flex: 1;
   min-width: 0;
   box-sizing: border-box;
+  position: relative;
+}
+.player-card__avg-ref {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+.player-card__avg-ref-label {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translate(0, -50%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
 }
 .player-card__bar-wrap {
   flex: 1 1 0;

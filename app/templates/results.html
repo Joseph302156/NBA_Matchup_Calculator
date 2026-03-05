@@ -422,6 +422,14 @@
             barWrap.innerHTML = '<div class="player-card__bar-spacer"></div><span class="player-card__bar-value">' + displayVal + '</span><div class="player-card__bar" style="height:' + heightPx + 'px" title="' + (g.date || '') + ': ' + v + '"></div><span class="player-card__bar-label">' + labelDate + '</span>';
             barsWrap.appendChild(barWrap);
           });
+          if (scale > 0 && last5Avg >= 0) {
+            var avgBottomPx = (last5Avg / scale) * chartHeightPx;
+            var avgLineEl = document.createElement('div');
+            avgLineEl.className = 'player-card__avg-ref';
+            avgLineEl.style.bottom = avgBottomPx + 'px';
+            avgLineEl.innerHTML = '<span class="player-card__avg-ref-label">' + (last5Avg === (last5Avg | 0) ? (last5Avg | 0) : last5Avg.toFixed(1)) + '</span>';
+            barsWrap.appendChild(avgLineEl);
+          }
           frame.appendChild(barsWrap);
           playerCardChart.appendChild(frame);
         }

@@ -368,13 +368,27 @@
           if (playerCard) playerCard.style.display = 'none';
         }
 
+        function niceScale(maxVal) {
+          var rawMax = Math.max(maxVal * 1.15, 0.5);
+          var steps = [0.5, 1, 2, 5, 10, 20, 50, 100];
+          var step = 1;
+          for (var i = 0; i < steps.length; i++) {
+            if (steps[i] * 5 >= rawMax) { step = steps[i]; break; }
+          }
+          var scale = step * 5;
+          var ticks = [];
+          for (var t = 0; t <= scale; t += step) ticks.push(t);
+          return { scale: scale, step: step, ticks: ticks };
+        }
+
         function drawPlayerChart(statKey) {
           if (!playerCardChart || !currentPlayerData) return;
           var values = (currentPlayerGames || []).map(function(g) { return g[statKey] != null ? Number(g[statKey]) : 0; });
           var last5Sum = values.reduce(function(a, b) { return a + b; }, 0);
           var last5Avg = values.length ? last5Sum / values.length : 0;
           var maxVal = Math.max.apply(null, values.length ? values : [0]);
-          var scale = maxVal * 1.2 || 1;
+          var nice = niceScale(maxVal);
+          var scale = nice.scale;
           var gamesReversed = (currentPlayerGames || []).slice().reverse();
           var chartHeightPx = 160;
           playerCardChart.innerHTML = '';
@@ -387,9 +401,9 @@
           frame.className = 'player-card__chart-frame';
           var yAxis = document.createElement('div');
           yAxis.className = 'player-card__y-axis';
-          var tickCount = 5;
-          for (var t = tickCount - 1; t >= 0; t--) {
-            var val = (t / (tickCount - 1)) * scale;
+          var ticks = nice.ticks;
+          for (var ti = ticks.length - 1; ti >= 0; ti--) {
+            var val = ticks[ti];
             var tickEl = document.createElement('div');
             tickEl.className = 'player-card__y-tick';
             tickEl.textContent = val === (val | 0) ? (val | 0) : val.toFixed(1);
@@ -400,11 +414,12 @@
           barsWrap.className = 'player-card__bars';
           gamesReversed.forEach(function(g, i) {
             var v = g[statKey] != null ? Number(g[statKey]) : 0;
-            var heightPx = Math.max((v / scale) * chartHeightPx, 6);
+            var heightPx = scale > 0 ? Math.max((v / scale) * chartHeightPx, 6) : 6;
             var barWrap = document.createElement('div');
             barWrap.className = 'player-card__bar-wrap';
             var labelDate = (g.date || '').slice(5) || ('G' + (i + 1));
-            barWrap.innerHTML = '<div class="player-card__bar-spacer"></div><div class="player-card__bar" style="height:' + heightPx + 'px" title="' + (g.date || '') + ': ' + v + '"></div><span class="player-card__bar-label">' + labelDate + '</span>';
+            var displayVal = (v === (v | 0)) ? (v | 0) : v.toFixed(1);
+            barWrap.innerHTML = '<div class="player-card__bar-spacer"></div><span class="player-card__bar-value">' + displayVal + '</span><div class="player-card__bar" style="height:' + heightPx + 'px" title="' + (g.date || '') + ': ' + v + '"></div><span class="player-card__bar-label">' + labelDate + '</span>';
             barsWrap.appendChild(barWrap);
           });
           frame.appendChild(barsWrap);

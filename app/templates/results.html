@@ -199,6 +199,7 @@
         <div id="player-card" class="player-card" style="display: none;">
           <button type="button" class="player-card__back" id="player-card-back">← Back to matchup</button>
           <div class="player-card__header">
+            <img class="player-card__headshot" id="player-card-headshot" src="" alt="" width="80" height="80" />
             <div class="player-card__header-info">
               <h2 class="player-card__name" id="player-card-name"></h2>
               <p class="player-card__meta" id="player-card-meta"></p>
@@ -350,6 +351,7 @@
         var gamesContainer = document.getElementById('games-container');
         var playerCard = document.getElementById('player-card');
         var playerCardBack = document.getElementById('player-card-back');
+        var playerCardHeadshot = document.getElementById('player-card-headshot');
         var playerCardName = document.getElementById('player-card-name');
         var playerCardMeta = document.getElementById('player-card-meta');
         var playerCardSeasonTbody = document.getElementById('player-card-season-tbody');
@@ -465,6 +467,13 @@
             stl: btn.getAttribute('data-stl'),
             blk: btn.getAttribute('data-blk'),
           };
+          if (playerCardHeadshot) {
+            var headshotUrl = 'https://cdn.nba.com/headshots/nba/latest/260x190/' + playerId + '.png';
+            playerCardHeadshot.src = headshotUrl;
+            playerCardHeadshot.alt = playerName;
+            playerCardHeadshot.style.display = '';
+            playerCardHeadshot.onerror = function() { this.style.display = 'none'; };
+          }
           playerCardName.textContent = playerName;
           playerCardMeta.textContent = (team ? team + ' · ' : '') + (position || '');
           playerCardSeasonTbody.innerHTML = '';

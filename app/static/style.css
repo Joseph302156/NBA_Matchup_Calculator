@@ -333,118 +333,63 @@ body {
   border-color: rgba(74, 222, 128, 0.5);
   background: rgba(74, 222, 128, 0.12);
 }
-.player-card__chart-row {
-  display: flex;
-  gap: 1.25rem;
-  align-items: stretch;
-  margin-bottom: 1rem;
-}
-.player-card__chart-col--graph { flex: 1 1 55%; min-width: 0; }
-.player-card__chart-col--table { flex: 0 0 auto; min-width: 200px; }
 .player-card__chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  height: 240px;
-  min-height: 200px;
+  height: 200px;
+  margin-bottom: 0.5rem;
 }
 .player-card__chart-empty {
   margin: 0;
-  width: 100%;
-  text-align: center;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-secondary);
   font-size: 0.9375rem;
-  padding: 2rem;
 }
-.player-card__y-axis {
+.player-card__bars {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 220px;
-  padding-right: 0.5rem;
-  flex-shrink: 0;
-}
-.player-card__y-tick {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-.player-card__chart-inner {
-  display: flex;
+  flex-direction: row;
   align-items: flex-end;
-  gap: 0.5rem;
-  flex: 1;
-  height: 220px;
-  min-width: 0;
+  justify-content: center;
+  gap: 0.75rem;
+  height: 160px;
+  width: 100%;
 }
 .player-card__bar-wrap {
   flex: 1;
+  max-width: 56px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
+  height: 160px;
   min-width: 0;
-  height: 220px;
 }
 .player-card__bar-spacer {
   flex: 1;
-  min-height: 0.25rem;
+  min-height: 4px;
+  width: 100%;
 }
 .player-card__bar {
   width: 100%;
-  max-width: 48px;
-  min-height: 8px;
+  min-height: 6px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #4ade80 0%, rgba(74, 222, 128, 0.75) 100%);
+  background: linear-gradient(180deg, #4ade80 0%, rgba(74, 222, 128, 0.8) 100%);
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  transition: height 0.25s ease;
-  box-shadow: 0 -1px 6px rgba(74, 222, 128, 0.25);
+  transition: height 0.2s ease;
 }
 .player-card__bar-label {
-  margin-top: 0.4rem;
-  font-size: 0.75rem;
+  margin-top: 0.35rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-secondary);
   flex-shrink: 0;
 }
-.player-card__game-log {
-  width: 100%;
-  border-collapse: collapse;
+.player-card__avg-line {
+  margin: 0;
   font-size: 0.875rem;
-}
-.player-card__game-log th,
-.player-card__game-log td {
-  padding: 0.5rem 0.6rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border-light);
-}
-.player-card__game-log th {
-  color: var(--text-secondary);
-  font-weight: 600;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.player-card__game-log td { font-weight: 600; color: var(--text); }
-.player-card__game-log tr:last-child td { border-bottom: none; }
-.player-card__avg-box {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: var(--radius);
-  border: 1px solid var(--border-light);
-}
-.player-card__avg-label {
-  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-secondary);
-}
-.player-card__avg-value {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #fff;
 }
 
 .matchup-strip {

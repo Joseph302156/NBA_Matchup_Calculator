@@ -340,6 +340,33 @@ body {
   margin-bottom: 0.5rem;
   overflow: visible;
 }
+.player-card__chart-frame {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  height: 160px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 0.75rem 0 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+.player-card__y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 160px;
+  padding-right: 0.5rem;
+  margin-right: 0.25rem;
+  border-right: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+.player-card__y-tick {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1;
+}
 .player-card__chart-empty {
   margin: 0;
   height: 100%;
@@ -358,7 +385,8 @@ body {
   gap: 0.75rem;
   height: 160px;
   min-height: 160px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   box-sizing: border-box;
 }
 .player-card__bar-wrap {

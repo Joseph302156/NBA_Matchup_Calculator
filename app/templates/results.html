@@ -383,6 +383,19 @@
             playerCardChart.innerHTML = '<p class="player-card__chart-empty">No recent games</p>';
             return;
           }
+          var frame = document.createElement('div');
+          frame.className = 'player-card__chart-frame';
+          var yAxis = document.createElement('div');
+          yAxis.className = 'player-card__y-axis';
+          var tickCount = 5;
+          for (var t = tickCount - 1; t >= 0; t--) {
+            var val = (t / (tickCount - 1)) * scale;
+            var tickEl = document.createElement('div');
+            tickEl.className = 'player-card__y-tick';
+            tickEl.textContent = val === (val | 0) ? (val | 0) : val.toFixed(1);
+            yAxis.appendChild(tickEl);
+          }
+          frame.appendChild(yAxis);
           var barsWrap = document.createElement('div');
           barsWrap.className = 'player-card__bars';
           gamesReversed.forEach(function(g, i) {
@@ -394,7 +407,8 @@
             barWrap.innerHTML = '<div class="player-card__bar-spacer"></div><div class="player-card__bar" style="height:' + heightPx + 'px" title="' + (g.date || '') + ': ' + v + '"></div><span class="player-card__bar-label">' + labelDate + '</span>';
             barsWrap.appendChild(barWrap);
           });
-          playerCardChart.appendChild(barsWrap);
+          frame.appendChild(barsWrap);
+          playerCardChart.appendChild(frame);
         }
 
         function setActiveStatTab(statKey) {

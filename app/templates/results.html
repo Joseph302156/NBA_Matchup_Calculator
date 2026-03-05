@@ -391,11 +391,9 @@
             refLines.innerHTML = '<div class="player-card__ref-line player-card__ref-line--season" style="bottom:' + pctSeason + '%" title="Season avg: ' + seasonAvg.toFixed(1) + '"></div><div class="player-card__ref-line player-card__ref-line--last5" style="bottom:' + pctLast5 + '%" title="Last 5 avg: ' + last5Avg.toFixed(1) + '"></div>';
             playerCardChart.appendChild(chartInner);
             playerCardChart.appendChild(refLines);
-          } else {
-            playerCardChart.appendChild(chartInner);
           }
           if (playerCardLegend && gamesReversed.length) {
-            playerCardLegend.innerHTML = '<span class="player-card__legend-item player-card__ref-line--season"></span> Season avg ' + seasonAvg.toFixed(1) + ' &nbsp; <span class="player-card__legend-item player-card__ref-line--last5"></span> Last 5 avg ' + last5Avg.toFixed(1);
+            playerCardLegend.innerHTML = '<span class="player-card__legend-item player-card__ref-line--season"></span> Season avg ' + seasonAvg.toFixed(1) + '\u00A0\u00A0<span class="player-card__legend-item player-card__ref-line--last5"></span> Last 5 avg ' + last5Avg.toFixed(1);
           } else if (playerCardLegend) {
             playerCardLegend.innerHTML = '';
           }

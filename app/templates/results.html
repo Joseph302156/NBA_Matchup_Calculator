@@ -239,8 +239,7 @@
     <script>
       (function() {
         var container = document.getElementById('games-container');
-        if (!container) return;
-        var cards = container.querySelectorAll('.game-card');
+        var cards = container ? container.querySelectorAll('.game-card') : [];
         var buttons = document.querySelectorAll('.matchup-btn');
         var currentGameIndex = 0;
         function showGame(index) {
@@ -411,7 +410,7 @@
 
         document.addEventListener('click', function(e) {
           var btn = e.target && e.target.closest('.player-name-btn');
-          if (!btn || !playerCard) return;
+          if (!btn || !playerCard || !playerCardName || !playerCardSeasonTbody) return;
           var roster = btn.closest('.roster');
           var team = roster && roster.getAttribute('data-team') ? roster.getAttribute('data-team') : '';
           var playerId = btn.getAttribute('data-player-id');

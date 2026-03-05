@@ -389,6 +389,11 @@
           var maxVal = Math.max.apply(null, values.length ? values : [0]);
           var nice = niceScale(maxVal);
           var scale = nice.scale;
+          var ticks = nice.ticks;
+          if (statKey === 'ast' || statKey === 'reb') {
+            scale = 20;
+            ticks = [0, 5, 10, 15, 20];
+          }
           var gamesReversed = (currentPlayerGames || []).slice().reverse();
           var barBaselinePx = 18;
           var barAreaHeightPx = 160 - barBaselinePx;
@@ -402,7 +407,6 @@
           frame.className = 'player-card__chart-frame';
           var yAxis = document.createElement('div');
           yAxis.className = 'player-card__y-axis';
-          var ticks = nice.ticks;
           for (var ti = ticks.length - 1; ti >= 0; ti--) {
             var val = ticks[ti];
             var tickEl = document.createElement('div');

@@ -390,7 +390,8 @@
           var nice = niceScale(maxVal);
           var scale = nice.scale;
           var gamesReversed = (currentPlayerGames || []).slice().reverse();
-          var chartHeightPx = 160;
+          var barBaselinePx = 18;
+          var barAreaHeightPx = 160 - barBaselinePx;
           playerCardChart.innerHTML = '';
           if (playerCardAvgLine) playerCardAvgLine.textContent = gamesReversed.length ? 'Avg. last 5: ' + last5Avg.toFixed(1) : '';
           if (!gamesReversed.length) {
@@ -414,7 +415,7 @@
           barsWrap.className = 'player-card__bars';
           gamesReversed.forEach(function(g, i) {
             var v = g[statKey] != null ? Number(g[statKey]) : 0;
-            var heightPx = scale > 0 ? Math.max((v / scale) * chartHeightPx, 6) : 6;
+            var heightPx = scale > 0 ? Math.max((v / scale) * barAreaHeightPx, 6) : 6;
             var barWrap = document.createElement('div');
             barWrap.className = 'player-card__bar-wrap';
             var labelDate = (g.date || '').slice(5) || ('G' + (i + 1));
@@ -423,7 +424,7 @@
             barsWrap.appendChild(barWrap);
           });
           if (scale > 0 && last5Avg >= 0) {
-            var avgBottomPx = (last5Avg / scale) * chartHeightPx;
+            var avgBottomPx = barBaselinePx + (last5Avg / scale) * barAreaHeightPx;
             var avgLineEl = document.createElement('div');
             avgLineEl.className = 'player-card__avg-ref';
             avgLineEl.style.bottom = avgBottomPx + 'px';

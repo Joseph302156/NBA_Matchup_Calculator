@@ -262,8 +262,8 @@ body {
   margin-bottom: 1.5rem;
 }
 .player-card__headshot {
-  width: 80px;
-  height: 80px;
+  width: 104px;
+  height: 104px;
   object-fit: cover;
   border-radius: var(--radius);
   border: 1px solid var(--border-light);
@@ -271,8 +271,8 @@ body {
 }
 .player-card__header-info { flex: 1; min-width: 0; }
 .player-card__name {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.625rem;
+  margin: 0 0 0.35rem 0;
+  font-size: 1.875rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.2;
@@ -280,7 +280,7 @@ body {
 }
 .player-card__meta {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
   color: var(--text-secondary);
   font-weight: 600;
   letter-spacing: 0.02em;

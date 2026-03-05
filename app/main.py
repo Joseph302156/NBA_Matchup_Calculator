@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from src.web_pipeline import build_predictions_for_date
 from app.chat import build_chat_context, get_reply
+from src.data.fetchers import get_player_last_n_game_logs
 
 app = FastAPI(title="NBA Matchup Calculator", version="1.0")
 
@@ -99,3 +100,10 @@ async def api_chat(body: ChatBody):
     ctx = build_chat_context(data.get("date_display", target_date), data.get("games") or [])
     reply = get_reply(body.message, body.game_index, ctx)
     return {"reply": reply}
+
+
+@app.get("/api/player-games")
+async def api_player_games(player_id: int, n: int = 5):
+    """Last N game-by-game stat lines for a player (for player stats / chart)."""
+    games = get_player_last_n_game_logs(player_id, n=n)
+    return {"games": games}

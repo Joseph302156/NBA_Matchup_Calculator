@@ -649,6 +649,54 @@ def get_player_recent_stats(cache=None, last_n=None):
     return result
 
 
+def get_player_last_n_game_logs(player_id, n=5):
+    """
+    Last N games for one player (game-by-game stat lines).
+    Returns list of dicts: [{ "date": "YYYY-MM-DD", "min", "pts", "ast", "reb", "stl", "blk" }, ...]
+    (most recent game last for display order).
+    """
+    season = _season()
+    try:
+        e = LeagueGameLog(
+            season=season,
+            player_or_team_abbreviation=PlayerOrTeamAbbreviation.player,
+        )
+        time.sleep(REQUEST_DELAY)
+        df = e.get_data_frames()[0]
+    except Exception:
+        return []
+    if df is None or df.empty:
+        return []
+    pid_col = "PLAYER_ID" if "PLAYER_ID" in df.columns else ("Player_ID" if "Player_ID" in df.columns else None)
+    date_col = "GAME_DATE" if "GAME_DATE" in df.columns else None
+    stat_cols = ["MIN", "PTS", "AST", "REB", "STL", "BLK"]
+    if pid_col is None or date_col is None or any(c not in df.columns for c in stat_cols):
+        return []
+    df = df[df[pid_col] == int(player_id)].copy()
+    if df.empty:
+        return []
+    df["_date"] = pd.to_datetime(df[date_col], errors="coerce")
+    df = df.dropna(subset=["_date"])
+    df = df.sort_values("_date", ascending=False).head(n)
+    out = []
+    for _, row in df.iterrows():
+        try:
+            d = row["_date"]
+            date_str = d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10]
+            out.append({
+                "date": date_str,
+                "min": round(float(row.get("MIN") or 0), 1),
+                "pts": round(float(row.get("PTS") or 0), 1),
+                "ast": round(float(row.get("AST") or 0), 1),
+                "reb": round(float(row.get("REB") or 0), 1),
+                "stl": round(float(row.get("STL") or 0), 1),
+                "blk": round(float(row.get("BLK") or 0), 1),
+            })
+        except Exception:
+            continue
+    return out
+
+
 def augment_injuries_with_recent_games(injuries, team_ids, player_last_game_dates, cutoff_days=None):
     """
     Add to the injury list any roster player who hasn't played in cutoff_days (default 14).

@@ -197,6 +197,165 @@ body {
 
 .chat-panel__send:hover { opacity: 0.9; }
 
+/* Clickable player name in roster */
+.player-name-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.player-name-btn:hover { color: var(--primary-hover, #7c9eff); }
+
+/* Player stats card (replaces matchup when a player is clicked) */
+.player-card {
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.player-card__back {
+  margin-bottom: 1rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.player-card__back:hover { color: var(--text); border-color: var(--border-light); }
+.player-card__name {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.player-card__meta {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.player-card__season {
+  width: 100%;
+  max-width: 240px;
+  margin-bottom: 1.5rem;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.player-card__season th,
+.player-card__season td {
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+.player-card__season th { color: var(--text-secondary); font-weight: 500; }
+.player-card__chart-section { margin-top: 1.25rem; }
+.player-card__chart-label {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.player-card__stat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+.player-card__stat-tab {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.player-card__stat-tab:hover { color: var(--text); border-color: var(--border-light); }
+.player-card__stat-tab.active {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-muted);
+}
+.player-card__chart {
+  position: relative;
+  height: 200px;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+.player-card__chart-inner {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.player-card__bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+}
+.player-card__bar {
+  width: 100%;
+  max-width: 48px;
+  min-height: 2px;
+  background: var(--primary);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: height 0.2s ease;
+}
+.player-card__bar-label {
+  margin-top: 0.35rem;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+.player-card__ref-lines {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.player-card__ref-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 1px;
+}
+.player-card__ref-line--season {
+  background: var(--text-secondary);
+  opacity: 0.8;
+}
+.player-card__ref-line--last5 {
+  background: var(--primary);
+  opacity: 0.9;
+}
+.player-card__legend {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.player-card__legend-item {
+  display: inline-block;
+  width: 12px;
+  height: 2px;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+}
+
 .matchup-strip {
   display: flex;
   flex-wrap: wrap;

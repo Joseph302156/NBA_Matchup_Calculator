@@ -63,7 +63,7 @@
         </div>
 
         <div class="rosters">
-          <div class="roster away">
+          <div class="roster away" data-team="{{ game.away_tricode }}">
             <h4>{{ game.away_tricode }} roster & stats</h4>
             <table>
               <thead>
@@ -82,7 +82,7 @@
               <tbody>
                 {% for p in game.away_roster %}
                 <tr class="status-{{ p.status | lower }}">
-                  <td>{{ p.player_name }}</td>
+                  <td><button type="button" class="player-name-btn" data-player-id="{{ p.player_id }}" data-player-name="{{ p.player_name | e }}" data-position="{{ p.position }}" data-min="{{ p.MIN }}" data-pts="{{ p.PTS }}" data-ast="{{ p.AST }}" data-reb="{{ p.REB }}" data-stl="{{ p.STL }}" data-blk="{{ p.BLK }}">{{ p.player_name }}</button></td>
                   <td>{{ p.position }}</td>
                   <td><span class="badge {{ p.status | lower }}">{{ p.status }}</span></td>
                   <td>{{ (p.MIN | round(1)) }}</td>
@@ -104,7 +104,7 @@
             </ul>
             {% endif %}
           </div>
-          <div class="roster home">
+          <div class="roster home" data-team="{{ game.home_tricode }}">
             <h4>{{ game.home_tricode }} roster & stats</h4>
             <table>
               <thead>
@@ -123,7 +123,7 @@
               <tbody>
                 {% for p in game.home_roster %}
                 <tr class="status-{{ p.status | lower }}">
-                  <td>{{ p.player_name }}</td>
+                  <td><button type="button" class="player-name-btn" data-player-id="{{ p.player_id }}" data-player-name="{{ p.player_name | e }}" data-position="{{ p.position }}" data-min="{{ p.MIN }}" data-pts="{{ p.PTS }}" data-ast="{{ p.AST }}" data-reb="{{ p.REB }}" data-stl="{{ p.STL }}" data-blk="{{ p.BLK }}">{{ p.player_name }}</button></td>
                   <td>{{ p.position }}</td>
                   <td><span class="badge {{ p.status | lower }}">{{ p.status }}</span></td>
                   <td>{{ (p.MIN | round(1)) }}</td>
@@ -192,6 +192,27 @@
       </article>
       {% endfor %}
     </section>
+        <div id="player-card" class="player-card" hidden>
+          <button type="button" class="player-card__back" id="player-card-back">← Back to matchup</button>
+          <h3 class="player-card__name" id="player-card-name"></h3>
+          <p class="player-card__meta" id="player-card-meta"></p>
+          <table class="player-card__season">
+            <thead><tr><th>Stat</th><th>Season avg</th></tr></thead>
+            <tbody id="player-card-season-tbody"></tbody>
+          </table>
+          <div class="player-card__chart-section">
+            <p class="player-card__chart-label">Last 5 games — select stat:</p>
+            <div class="player-card__stat-tabs" id="player-card-stat-tabs">
+              <button type="button" class="player-card__stat-tab active" data-stat="pts">PTS</button>
+              <button type="button" class="player-card__stat-tab" data-stat="ast">AST</button>
+              <button type="button" class="player-card__stat-tab" data-stat="reb">REB</button>
+              <button type="button" class="player-card__stat-tab" data-stat="stl">STL</button>
+              <button type="button" class="player-card__stat-tab" data-stat="blk">BLK</button>
+            </div>
+            <div class="player-card__chart" id="player-card-chart"></div>
+            <div class="player-card__legend" id="player-card-legend"></div>
+          </div>
+        </div>
         </div>
 
       <aside class="chat-panel" aria-label="AI assistant chat">
@@ -316,6 +337,126 @@
           setChatPanelHeight();
           lockMessagesHeight();
           window.addEventListener('resize', function() { setChatPanelHeight(); lockMessagesHeight(); });
+        }
+
+        var gamesContainer = document.getElementById('games-container');
+        var playerCard = document.getElementById('player-card');
+        var playerCardBack = document.getElementById('player-card-back');
+        var playerCardName = document.getElementById('player-card-name');
+        var playerCardMeta = document.getElementById('player-card-meta');
+        var playerCardSeasonTbody = document.getElementById('player-card-season-tbody');
+        var playerCardChart = document.getElementById('player-card-chart');
+        var playerCardLegend = document.getElementById('player-card-legend');
+        var playerCardStatTabs = document.getElementById('player-card-stat-tabs');
+        var currentPlayerData = null;
+        var currentPlayerGames = [];
+
+        function showPlayerCard() {
+          if (gamesContainer) gamesContainer.hidden = true;
+          if (playerCard) { playerCard.hidden = false; }
+        }
+        function hidePlayerCard() {
+          if (playerCard) playerCard.hidden = true;
+          if (gamesContainer) gamesContainer.hidden = false;
+        }
+
+        function drawPlayerChart(statKey) {
+          if (!playerCardChart || !currentPlayerData || !currentPlayerGames.length) return;
+          var statLabels = { pts: 'PTS', ast: 'AST', reb: 'REB', stl: 'STL', blk: 'BLK' };
+          var seasonAvg = currentPlayerData[statKey] != null ? Number(currentPlayerData[statKey]) : 0;
+          var values = currentPlayerGames.map(function(g) { return g[statKey] != null ? Number(g[statKey]) : 0; });
+          var last5Sum = values.reduce(function(a, b) { return a + b; }, 0);
+          var last5Avg = values.length ? last5Sum / values.length : 0;
+          var maxVal = Math.max(seasonAvg, last5Avg, Math.max.apply(null, values), 1);
+          var scale = maxVal * 1.15 || 1;
+          var gamesReversed = currentPlayerGames.slice().reverse();
+          playerCardChart.innerHTML = '';
+          var chartInner = document.createElement('div');
+          chartInner.className = 'player-card__chart-inner';
+          gamesReversed.forEach(function(g, i) {
+            var v = g[statKey] != null ? Number(g[statKey]) : 0;
+            var pct = (v / scale) * 100;
+            var bar = document.createElement('div');
+            bar.className = 'player-card__bar-wrap';
+            bar.innerHTML = '<div class="player-card__bar" style="height:' + pct + '%" title="' + g.date + ': ' + v + '"></div><span class="player-card__bar-label">' + (g.date ? g.date.slice(5) : 'G' + (i+1)) + '</span>';
+            chartInner.appendChild(bar);
+          });
+          var refLines = document.createElement('div');
+          refLines.className = 'player-card__ref-lines';
+          var pctSeason = (seasonAvg / scale) * 100;
+          var pctLast5 = (last5Avg / scale) * 100;
+          refLines.innerHTML = '<div class="player-card__ref-line player-card__ref-line--season" style="bottom:' + pctSeason + '%" title="Season avg: ' + seasonAvg.toFixed(1) + '"></div><div class="player-card__ref-line player-card__ref-line--last5" style="bottom:' + pctLast5 + '%" title="Last 5 avg: ' + last5Avg.toFixed(1) + '"></div>';
+          playerCardChart.appendChild(chartInner);
+          playerCardChart.appendChild(refLines);
+          if (playerCardLegend) {
+            playerCardLegend.innerHTML = '<span class="player-card__legend-item player-card__ref-line--season"></span> Season avg ' + seasonAvg.toFixed(1) + ' &nbsp; <span class="player-card__legend-item player-card__ref-line--last5"></span> Last 5 avg ' + last5Avg.toFixed(1);
+          }
+        }
+
+        function setActiveStatTab(statKey) {
+          if (!playerCardStatTabs) return;
+          [].forEach.call(playerCardStatTabs.querySelectorAll('.player-card__stat-tab'), function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-stat') === statKey);
+          });
+        }
+
+        document.addEventListener('click', function(e) {
+          var btn = e.target && e.target.closest('.player-name-btn');
+          if (!btn || !playerCard) return;
+          var roster = btn.closest('.roster');
+          var team = roster && roster.getAttribute('data-team') ? roster.getAttribute('data-team') : '';
+          var playerId = btn.getAttribute('data-player-id');
+          var playerName = btn.getAttribute('data-player-name') || btn.textContent;
+          var position = btn.getAttribute('data-position') || '';
+          currentPlayerData = {
+            name: playerName,
+            team: team,
+            position: position,
+            min: btn.getAttribute('data-min'),
+            pts: btn.getAttribute('data-pts'),
+            ast: btn.getAttribute('data-ast'),
+            reb: btn.getAttribute('data-reb'),
+            stl: btn.getAttribute('data-stl'),
+            blk: btn.getAttribute('data-blk'),
+          };
+          playerCardName.textContent = playerName;
+          playerCardMeta.textContent = (team ? team + ' · ' : '') + (position || '');
+          playerCardSeasonTbody.innerHTML = '';
+          [['min', 'MIN'], ['pts', 'PTS'], ['ast', 'AST'], ['reb', 'REB'], ['stl', 'STL'], ['blk', 'BLK']].forEach(function(pair) {
+            var val = currentPlayerData[pair[0]];
+            if (val != null && val !== '') {
+              var tr = document.createElement('tr');
+              tr.innerHTML = '<td>' + pair[1] + '</td><td>' + parseFloat(val).toFixed(1) + '</td>';
+              playerCardSeasonTbody.appendChild(tr);
+            }
+          });
+          fetch('/api/player-games?player_id=' + encodeURIComponent(playerId) + '&n=5')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              currentPlayerGames = data.games || [];
+              setActiveStatTab('pts');
+              drawPlayerChart('pts');
+              showPlayerCard();
+            })
+            .catch(function() {
+              currentPlayerGames = [];
+              setActiveStatTab('pts');
+              drawPlayerChart('pts');
+              showPlayerCard();
+            });
+        });
+
+        if (playerCardStatTabs) {
+          playerCardStatTabs.addEventListener('click', function(e) {
+            var tab = e.target && e.target.closest('.player-card__stat-tab');
+            if (!tab || !currentPlayerGames.length) return;
+            var stat = tab.getAttribute('data-stat');
+            setActiveStatTab(stat);
+            drawPlayerChart(stat);
+          });
+        }
+        if (playerCardBack) {
+          playerCardBack.addEventListener('click', hidePlayerCard);
         }
       })();
     </script>

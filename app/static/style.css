@@ -80,6 +80,26 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Single content area: either matchup (game cards) or player card */
+.results-panel__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.results-panel__content--matchup #games-container { display: block; }
+.results-panel__content--matchup .player-card { display: none !important; }
+.results-panel__content--player #games-container { display: none !important; }
+.results-panel__content--player .player-card {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .chat-panel {

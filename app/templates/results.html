@@ -32,6 +32,7 @@
 
       <div class="results-row">
         <div class="results-panel">
+        <div class="results-panel__content results-panel__content--matchup" id="results-panel-content">
         <section class="games" id="games-container">
       {% for game in games %}
       <article class="game-card" id="game-card-{{ loop.index0 }}" data-game-index="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
@@ -192,7 +193,7 @@
       </article>
       {% endfor %}
     </section>
-        <div id="player-card" class="player-card" hidden>
+        <div id="player-card" class="player-card">
           <button type="button" class="player-card__back" id="player-card-back">← Back to matchup</button>
           <h3 class="player-card__name" id="player-card-name"></h3>
           <p class="player-card__meta" id="player-card-meta"></p>
@@ -212,6 +213,7 @@
             <div class="player-card__chart" id="player-card-chart"></div>
             <div class="player-card__legend" id="player-card-legend"></div>
           </div>
+        </div>
         </div>
         </div>
 
@@ -339,6 +341,7 @@
           window.addEventListener('resize', function() { setChatPanelHeight(); lockMessagesHeight(); });
         }
 
+        var resultsPanelContent = document.getElementById('results-panel-content');
         var gamesContainer = document.getElementById('games-container');
         var playerCard = document.getElementById('player-card');
         var playerCardBack = document.getElementById('player-card-back');
@@ -352,12 +355,16 @@
         var currentPlayerGames = [];
 
         function showPlayerCard() {
-          if (gamesContainer) gamesContainer.hidden = true;
-          if (playerCard) { playerCard.hidden = false; }
+          if (resultsPanelContent) {
+            resultsPanelContent.classList.remove('results-panel__content--matchup');
+            resultsPanelContent.classList.add('results-panel__content--player');
+          }
         }
         function hidePlayerCard() {
-          if (playerCard) playerCard.hidden = true;
-          if (gamesContainer) gamesContainer.hidden = false;
+          if (resultsPanelContent) {
+            resultsPanelContent.classList.remove('results-panel__content--player');
+            resultsPanelContent.classList.add('results-panel__content--matchup');
+          }
         }
 
         function drawPlayerChart(statKey) {

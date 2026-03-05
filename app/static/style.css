@@ -233,97 +233,111 @@ body {
 
 /* Player stats card (replaces matchup when a player is clicked) */
 .player-card {
-  padding: 1.5rem 1.75rem;
-  background: var(--bg-elevated);
+  padding: 2rem 2.25rem;
+  background: linear-gradient(165deg, var(--bg-elevated) 0%, var(--bg-card) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  font-family: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 .player-card__back {
-  margin-bottom: 1.25rem;
-  padding: 0.5rem 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 0.6rem 1rem;
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
   color: var(--text-secondary);
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.15s;
 }
-.player-card__back:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-muted); }
+.player-card__back:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-muted); transform: translateX(-2px); }
 .player-card__name {
-  margin: 0 0 0.35rem 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  margin: 0 0 0.4rem 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
   color: var(--text);
+  text-shadow: 0 0 0 var(--text);
 }
 .player-card__meta {
-  margin: 0 0 1.25rem 0;
-  font-size: 1rem;
+  margin: 0 0 1.5rem 0;
+  font-size: 1.0625rem;
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 .player-card__season {
   width: 100%;
-  max-width: 280px;
-  margin-bottom: 1.75rem;
+  max-width: 320px;
+  margin-bottom: 2rem;
   border-collapse: collapse;
-  font-size: 0.9375rem;
+  font-size: 1rem;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border-light);
 }
 .player-card__season th,
 .player-card__season td {
-  padding: 0.5rem 0.65rem;
+  padding: 0.65rem 0.9rem;
   text-align: left;
   border-bottom: 1px solid var(--border-light);
 }
-.player-card__season th { color: var(--text-secondary); font-weight: 600; }
-.player-card__season td { font-weight: 500; }
+.player-card__season tr:last-child th,
+.player-card__season tr:last-child td { border-bottom: none; }
+.player-card__season th { color: var(--text-secondary); font-weight: 700; font-size: 0.9375rem; }
+.player-card__season td { font-weight: 700; color: var(--text); }
 .player-card__chart-section {
-  margin-top: 1.5rem;
-  padding: 1.25rem;
+  margin-top: 1.75rem;
+  padding: 1.5rem;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 .player-card__chart-label {
-  margin: 0 0 0.75rem 0;
-  font-size: 1rem;
-  font-weight: 600;
+  margin: 0 0 1rem 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
   color: var(--text);
+  letter-spacing: 0.01em;
 }
 .player-card__stat-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 .player-card__stat-tab {
-  padding: 0.5rem 0.9rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+  padding: 0.55rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
   font-family: inherit;
   color: var(--text-secondary);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.1s;
 }
-.player-card__stat-tab:hover { color: var(--text); border-color: var(--border-light); background: var(--bg-elevated); }
+.player-card__stat-tab:hover { color: var(--text); border-color: var(--border-light); background: var(--bg-elevated); transform: translateY(-1px); }
 .player-card__stat-tab.active {
   color: var(--primary);
   border-color: var(--primary);
   background: var(--primary-muted);
+  box-shadow: 0 0 0 1px var(--primary);
 }
 .player-card__chart {
   position: relative;
-  height: 260px;
+  height: 280px;
+  min-height: 200px;
   margin-bottom: 0.75rem;
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 0.75rem;
   padding: 0.75rem 0;
 }
@@ -337,10 +351,11 @@ body {
 }
 .player-card__chart-inner {
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 0.75rem;
   width: 100%;
   height: 100%;
+  min-height: 200px;
   position: relative;
 }
 .player-card__bar-wrap {
@@ -348,24 +363,26 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 100%;
   min-width: 0;
+  min-height: 0;
 }
 .player-card__bar-spacer {
-  flex: 1;
-  min-height: 0.5rem;
+  flex: 1 1 0;
+  min-height: 0.25rem;
 }
 .player-card__bar-value {
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 0.9375rem;
+  font-weight: 800;
   color: var(--text);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.35rem;
   line-height: 1;
+  flex-shrink: 0;
 }
 .player-card__bar {
   width: 100%;
-  max-width: 56px;
-  min-height: 6px;
+  max-width: 64px;
+  min-height: 8px;
+  flex-shrink: 0;
   background: linear-gradient(180deg, var(--primary) 0%, rgba(88, 166, 255, 0.75) 100%);
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   transition: height 0.25s ease;
@@ -374,8 +391,9 @@ body {
 .player-card__bar-label {
   margin-top: 0.5rem;
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
+  flex-shrink: 0;
 }
 .player-card__ref-lines {
   position: absolute;
@@ -403,15 +421,16 @@ body {
   box-shadow: 0 0 8px rgba(88, 166, 255, 0.4);
 }
 .player-card__legend {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9375rem;
+  font-weight: 600;
   color: var(--text-secondary);
+  letter-spacing: 0.02em;
 }
 .player-card__legend-item {
   display: inline-block;
-  width: 14px;
+  width: 16px;
   height: 3px;
-  margin-right: 0.35rem;
+  margin-right: 0.4rem;
   vertical-align: middle;
   border-radius: 2px;
 }

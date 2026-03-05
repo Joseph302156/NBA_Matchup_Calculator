@@ -439,14 +439,14 @@
             .then(function(data) {
               currentPlayerGames = data.games || [];
               setActiveStatTab('pts');
-              drawPlayerChart('pts');
               showPlayerCard();
+              requestAnimationFrame(function() { drawPlayerChart('pts'); });
             })
             .catch(function() {
               currentPlayerGames = [];
               setActiveStatTab('pts');
-              drawPlayerChart('pts');
               showPlayerCard();
+              requestAnimationFrame(function() { drawPlayerChart('pts'); });
             });
         });
 

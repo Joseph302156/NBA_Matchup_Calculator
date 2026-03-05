@@ -334,8 +334,11 @@ body {
   background: rgba(74, 222, 128, 0.12);
 }
 .player-card__chart {
+  display: block;
   height: 200px;
+  min-height: 200px;
   margin-bottom: 0.5rem;
+  overflow: visible;
 }
 .player-card__chart-empty {
   margin: 0;
@@ -347,34 +350,40 @@ body {
   font-size: 0.9375rem;
 }
 .player-card__bars {
-  display: flex;
-  flex-direction: row;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap;
   align-items: flex-end;
   justify-content: center;
   gap: 0.75rem;
   height: 160px;
+  min-height: 160px;
   width: 100%;
+  box-sizing: border-box;
 }
 .player-card__bar-wrap {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 36px;
   max-width: 56px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
   height: 160px;
-  min-width: 0;
+  min-height: 160px;
 }
 .player-card__bar-spacer {
-  flex: 1;
+  flex: 1 1 0%;
   min-height: 4px;
   width: 100%;
 }
 .player-card__bar {
   width: 100%;
+  min-width: 20px;
   min-height: 6px;
-  flex-shrink: 0;
-  background: linear-gradient(180deg, #4ade80 0%, rgba(74, 222, 128, 0.8) 100%);
+  flex: 0 0 auto;
+  background: #4ade80;
+  background: linear-gradient(180deg, #4ade80 0%, rgba(74, 222, 128, 0.85) 100%);
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   transition: height 0.2s ease;
 }

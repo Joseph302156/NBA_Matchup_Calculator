@@ -91,11 +91,12 @@ body {
   display: flex;
   flex-direction: column;
 }
+/* View swap is controlled by JS (inline style.display). These are fallbacks only. */
 .results-panel__content--matchup #games-container { display: block; }
-.results-panel__content--matchup .player-card { display: none !important; }
-.results-panel__content--player #games-container { display: none !important; }
+.results-panel__content--matchup .player-card { display: none; }
+.results-panel__content--player #games-container { display: none; }
 .results-panel__content--player .player-card {
-  display: flex !important;
+  display: flex;
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;

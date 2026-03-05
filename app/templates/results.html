@@ -193,7 +193,7 @@
       </article>
       {% endfor %}
     </section>
-        <div id="player-card" class="player-card">
+        <div id="player-card" class="player-card" style="display: none;">
           <button type="button" class="player-card__back" id="player-card-back">← Back to matchup</button>
           <h3 class="player-card__name" id="player-card-name"></h3>
           <p class="player-card__meta" id="player-card-meta"></p>
@@ -341,7 +341,6 @@
           window.addEventListener('resize', function() { setChatPanelHeight(); lockMessagesHeight(); });
         }
 
-        var resultsPanelContent = document.getElementById('results-panel-content');
         var gamesContainer = document.getElementById('games-container');
         var playerCard = document.getElementById('player-card');
         var playerCardBack = document.getElementById('player-card-back');
@@ -355,16 +354,12 @@
         var currentPlayerGames = [];
 
         function showPlayerCard() {
-          if (resultsPanelContent) {
-            resultsPanelContent.classList.remove('results-panel__content--matchup');
-            resultsPanelContent.classList.add('results-panel__content--player');
-          }
+          if (gamesContainer) gamesContainer.style.display = 'none';
+          if (playerCard) playerCard.style.display = 'block';
         }
         function hidePlayerCard() {
-          if (resultsPanelContent) {
-            resultsPanelContent.classList.remove('results-panel__content--player');
-            resultsPanelContent.classList.add('results-panel__content--matchup');
-          }
+          if (gamesContainer) gamesContainer.style.display = 'block';
+          if (playerCard) playerCard.style.display = 'none';
         }
 
         function drawPlayerChart(statKey) {

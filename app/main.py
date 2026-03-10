@@ -20,8 +20,17 @@ from pydantic import BaseModel
 from config import RECENT_STATS_GAMES
 from src.web_pipeline import build_predictions_for_date
 from app.chat import build_chat_context, get_reply
-from src.data.fetchers import get_player_last_n_game_logs, get_league_player_stats_per_game
+from src.data.fetchers import (
+    get_player_last_n_game_logs,
+    get_league_player_stats_per_game,
+    get_roster_with_stats,
+    get_injuries,
+    _normalize_name_for_match,
+)
 from src.player_projection import PlayerBaseStats, PlayerGameContext, project_player_stats
+
+# Minutes to add to projected MIN when a star teammate (≥18 PPG) is Out.
+STAR_OUT_MINUTES_BUMP = 4.0
 
 app = FastAPI(title="NBA Matchup Calculator", version="1.0")
 
@@ -115,9 +124,34 @@ async def api_player_games(player_id: int, n: int = 5):
 _player_stats_cache: dict = {}
 
 
+def _star_out_minutes_bump(team_id: int) -> float:
+    """Return extra minutes (e.g. 4) when a star teammate (≥18 PPG) is Out, else 0."""
+    try:
+        injuries = get_injuries()
+        injuries_list = injuries.get(team_id) or []
+        out_names = {
+            _normalize_name_for_match(i.get("player_name") or "")
+            for i in injuries_list
+            if (i.get("status") or "").strip().lower() == "out"
+        }
+        if not out_names:
+            return 0.0
+        roster = get_roster_with_stats(team_id, _player_stats_cache)
+        for p in roster:
+            if _normalize_name_for_match(p.get("player_name") or "") in out_names:
+                try:
+                    if float(p.get("PTS") or 0) >= 18:
+                        return STAR_OUT_MINUTES_BUMP
+                except (TypeError, ValueError):
+                    pass
+    except Exception:
+        pass
+    return 0.0
+
+
 @app.get("/api/player-projection")
-async def api_player_projection(player_id: int, is_home: bool = False):
-    """On-demand projection for one player (season + recent blend, home bump). No defense/usage/rust on this path."""
+async def api_player_projection(player_id: int, is_home: bool = False, team_id: Optional[int] = None):
+    """On-demand projection (season + recent blend, home bump). If team_id given, add minutes when a star teammate is Out."""
     stats_map = get_league_player_stats_per_game(_player_stats_cache)
     row = stats_map.get(player_id, {})
     if not row:
@@ -142,7 +176,8 @@ async def api_player_projection(player_id: int, is_home: bool = False):
         season_stl=season_stl, season_blk=season_blk, season_min=season_min,
         recent_games=recent_games,
     )
-    ctx = PlayerGameContext(is_home=is_home)
+    bump = _star_out_minutes_bump(team_id) if team_id is not None else 0.0
+    ctx = PlayerGameContext(is_home=is_home, star_out_minutes_bump=bump)
     proj = project_player_stats(base, ctx)
     return {
         "projections": {

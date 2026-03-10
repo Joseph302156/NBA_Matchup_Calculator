@@ -64,6 +64,8 @@ class PlayerGameContext:
     # Games missed prior to this game (including injury DNPs).
     # 0 = no recent absence, 1–2 = light rust, 3–5 = moderate rust, >5 = heavy rust.
     games_missed: int = 0
+    # Extra minutes when a star teammate is out (e.g. +3 to +5).
+    star_out_minutes_bump: float = 0.0
 
 
 def _recent_avg(recent_games: list[Dict[str, float]], key: StatKey) -> Optional[float]:
@@ -151,6 +153,11 @@ def _project_single_stat(
             mean *= 0.92  # 3–5 games out → ~8% dip
         elif gm > 5:
             mean *= 0.87  # 6+ games out → ~13% dip
+
+    # Extra minutes when a star teammate is out (e.g. Tyrese Maxey out → Grimes +3–5 min).
+    if stat == "min" and ctx.star_out_minutes_bump > 0:
+        mean += ctx.star_out_minutes_bump
+        mean = min(mean, 48.0)
 
     # 3) Distribution: simple variance model.
     # Empirically, NBA box-score stats are overdispersed vs Poisson;

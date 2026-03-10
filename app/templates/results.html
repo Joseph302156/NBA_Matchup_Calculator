@@ -67,7 +67,7 @@
         </div>
 
         <div class="rosters">
-          <div class="roster away" data-team="{{ game.away_tricode }}">
+          <div class="roster away" data-team="{{ game.away_tricode }}" data-team-id="{{ game.away_team_id }}">
             <h4>{{ game.away_tricode }} roster & stats</h4>
             <table>
               <thead>
@@ -108,7 +108,7 @@
             </ul>
             {% endif %}
           </div>
-          <div class="roster home" data-team="{{ game.home_tricode }}">
+          <div class="roster home" data-team="{{ game.home_tricode }}" data-team-id="{{ game.home_team_id }}">
             <h4>{{ game.home_tricode }} roster & stats</h4>
             <table>
               <thead>
@@ -496,7 +496,10 @@
           playerCardMeta.textContent = (team ? team + ' · ' : '') + (position || '');
           fillSeasonTable(null);
           var isHome = roster && roster.classList.contains('home');
-          fetch('/api/player-projection?player_id=' + encodeURIComponent(playerId) + '&is_home=' + (isHome ? 'true' : 'false'))
+          var teamId = roster && roster.getAttribute('data-team-id');
+          var projUrl = '/api/player-projection?player_id=' + encodeURIComponent(playerId) + '&is_home=' + (isHome ? 'true' : 'false');
+          if (teamId) projUrl += '&team_id=' + encodeURIComponent(teamId);
+          fetch(projUrl)
             .then(function(r) { return r.json(); })
             .then(function(projData) {
               if (projData && projData.projections) fillSeasonTable(projData.projections);

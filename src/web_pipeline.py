@@ -3,7 +3,7 @@ Build full game payload for web: rosters with statlines, injury status, ORtg/DRt
 """
 from datetime import datetime
 
-from config import RECENT_GAMES_N
+from config import RECENT_GAMES_N, RECENT_STATS_GAMES
 from src.data.fetchers import (
     get_games_for_date,
     get_team_season_stats,
@@ -18,6 +18,8 @@ from src.data.fetchers import (
 )
 from src.analysis.stat_importance import get_player_stat_weights
 from src.model import predict_game
+from src.data.fetchers import get_player_last_n_game_logs
+from src.player_projection import PlayerBaseStats, PlayerGameContext, project_player_stats
 
 
 def _roster_with_injury_status(team_id, injuries_list, player_stats_cache):
@@ -56,10 +58,53 @@ def _roster_with_injury_status(team_id, injuries_list, player_stats_cache):
 
 
 def _enrich_roster_with_recent(roster, player_recent):
-    """Add last-5-game averages to each player for chat/context. Preserves original keys."""
+    """Add last-5-game averages and neutral projections to each player. Preserves original keys."""
     out = []
     for p in roster:
         rec = (player_recent or {}).get(p.get("player_id")) or {}
+        pid = p.get("player_id")
+        projections = {}
+        if pid is not None:
+            try:
+                logs = get_player_last_n_game_logs(pid, n=RECENT_STATS_GAMES)
+                season_min = float(p.get("MIN") or 0.0)
+                season_pts = float(p.get("PTS") or 0.0)
+                season_ast = float(p.get("AST") or 0.0)
+                season_reb = float(p.get("REB") or 0.0)
+                season_stl = float(p.get("STL") or 0.0)
+                season_blk = float(p.get("BLK") or 0.0)
+                base = PlayerBaseStats(
+                    season_pts=season_pts,
+                    season_reb=season_reb,
+                    season_ast=season_ast,
+                    season_stl=season_stl,
+                    season_blk=season_blk,
+                    season_min=season_min,
+                    recent_games=[
+                        {
+                            "pts": g.get("pts", 0.0),
+                            "reb": g.get("reb", 0.0),
+                            "ast": g.get("ast", 0.0),
+                            "stl": g.get("stl", 0.0),
+                            "blk": g.get("blk", 0.0),
+                            "min": g.get("min", 0.0),
+                        }
+                        for g in logs
+                    ],
+                )
+                ctx = PlayerGameContext()
+                proj = project_player_stats(base, ctx)
+                projections = {
+                    "proj_min": round(proj["min"]["mean"], 1),
+                    "proj_pts": round(proj["pts"]["mean"], 1),
+                    "proj_ast": round(proj["ast"]["mean"], 1),
+                    "proj_reb": round(proj["reb"]["mean"], 1),
+                    "proj_stl": round(proj["stl"]["mean"], 1),
+                    "proj_blk": round(proj["blk"]["mean"], 1),
+                }
+            except Exception:
+                projections = {}
+
         out.append({
             **p,
             "recent_min": round(rec["MIN"], 1) if rec.get("MIN") is not None else None,
@@ -68,6 +113,7 @@ def _enrich_roster_with_recent(roster, player_recent):
             "recent_reb": round(rec["REB"], 1) if rec.get("REB") is not None else None,
             "recent_stl": round(rec["STL"], 1) if rec.get("STL") is not None else None,
             "recent_blk": round(rec["BLK"], 1) if rec.get("BLK") is not None else None,
+            **projections,
         })
     return out
 

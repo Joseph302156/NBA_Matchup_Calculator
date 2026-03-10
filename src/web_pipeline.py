@@ -57,8 +57,73 @@ def _roster_with_injury_status(team_id, injuries_list, player_stats_cache):
     return result
 
 
-def _enrich_roster_with_recent(roster, player_recent):
-    """Add last-5-game averages and neutral projections to each player. Preserves original keys."""
+def _enrich_roster_with_recent(
+    roster,
+    player_recent,
+    team_id,
+    opp_team_id,
+    team_stats,
+    ortg_drtg,
+    injuries_for_team,
+    is_home: bool,
+):
+    """Add last-5-game averages and context-aware projections to each player."""
+    # Precompute simple league averages for DRtg and REB to derive matchup factors.
+    drtgs = []
+    for od in (ortg_drtg or {}).values():
+        try:
+            drtgs.append(float(od.get("E_DEF_RATING") or 0.0))
+        except (TypeError, ValueError):
+            continue
+    league_avg_drtg = sum(drtgs) / len(drtgs) if drtgs else 110.0
+
+    rebs = []
+    for ts in (team_stats or {}).values():
+        try:
+            rebs.append(float(ts.get("REB") or 0.0))
+        except (TypeError, ValueError):
+            continue
+    league_avg_reb = sum(rebs) / len(rebs) if rebs else 43.0
+
+    opp_od = (ortg_drtg or {}).get(opp_team_id, {}) or {}
+    opp_ts = (team_stats or {}).get(opp_team_id, {}) or {}
+
+    try:
+        opp_drtg = float(opp_od.get("E_DEF_RATING") or 0.0)
+    except (TypeError, ValueError):
+        opp_drtg = league_avg_drtg
+    try:
+        opp_reb = float(opp_ts.get("REB") or league_avg_reb)
+    except (TypeError, ValueError):
+        opp_reb = league_avg_reb
+
+    # Tough defense: opp_drtg < league_avg_drtg, Soft defense: opp_drtg > league_avg_drtg
+    diff_drtg = (league_avg_drtg - opp_drtg) / 10.0  # ~1 "bucket" per 10 pts
+    scoring_def_factor = 1.0 + 0.06 * diff_drtg
+    scoring_def_factor = max(0.9, min(1.1, scoring_def_factor))
+
+    # Rebounding environment: teams that grab more boards than average suppress REB.
+    diff_reb = (opp_reb - league_avg_reb) / max(league_avg_reb, 1.0)
+    reb_def_factor = 1.0 - 0.5 * diff_reb
+    reb_def_factor = max(0.9, min(1.1, reb_def_factor))
+
+    # Identify high-usage teammates who are Out to drive usage bumps.
+    injuries_for_team = injuries_for_team or []
+    out_names = {
+        _normalize_name_for_match(inv.get("player_name") or "")
+        for inv in injuries_for_team
+        if (inv.get("status") or "").lower() == "out"
+    }
+    high_usage_out = set()
+    for p in roster:
+        nnorm = _normalize_name_for_match(p.get("player_name") or "")
+        try:
+            pts = float(p.get("PTS") or 0.0)
+        except (TypeError, ValueError):
+            pts = 0.0
+        if nnorm in out_names and pts >= 18.0:
+            high_usage_out.add(nnorm)
+
     out = []
     for p in roster:
         rec = (player_recent or {}).get(p.get("player_id")) or {}
@@ -73,6 +138,40 @@ def _enrich_roster_with_recent(roster, player_recent):
                 season_reb = float(p.get("REB") or 0.0)
                 season_stl = float(p.get("STL") or 0.0)
                 season_blk = float(p.get("BLK") or 0.0)
+
+                # Minutes factor: recent minutes vs season minutes.
+                recent_min = rec.get("MIN")
+                if recent_min is not None:
+                    try:
+                        mf_raw = float(recent_min) / max(season_min, 1.0)
+                    except (TypeError, ValueError):
+                        mf_raw = 1.0
+                    minutes_factor = max(0.7, min(1.3, mf_raw))
+                else:
+                    minutes_factor = 1.0
+
+                # Usage factor: bump when high-usage teammate is Out.
+                nnorm_self = _normalize_name_for_match(p.get("player_name") or "")
+                try:
+                    self_pts = float(p.get("PTS") or 0.0)
+                except (TypeError, ValueError):
+                    self_pts = 0.0
+                usage_factor = 1.0
+                if high_usage_out:
+                    # Star / primary scorer
+                    if self_pts >= 20.0:
+                        usage_factor = 1.10
+                    # Secondary scorer / creator
+                    elif self_pts >= 14.0:
+                        usage_factor = 1.05
+                    else:
+                        usage_factor = 1.02
+
+                # Approximate rust: how many of the last RECENT_STATS_GAMES team games
+                # the player likely missed. If we only have k logs, treat the rest as missed.
+                games_played_recent = len(logs)
+                games_missed = max(0, RECENT_STATS_GAMES - games_played_recent)
+
                 base = PlayerBaseStats(
                     season_pts=season_pts,
                     season_reb=season_reb,
@@ -92,7 +191,15 @@ def _enrich_roster_with_recent(roster, player_recent):
                         for g in logs
                     ],
                 )
-                ctx = PlayerGameContext()
+                ctx = PlayerGameContext(
+                    is_home=is_home,
+                    pace_factor=1.0,  # we can wire real pace later
+                    scoring_def_factor=scoring_def_factor,
+                    reb_def_factor=reb_def_factor,
+                    usage_factor=usage_factor,
+                    minutes_factor=minutes_factor,
+                    games_missed=games_missed,
+                )
                 proj = project_player_stats(base, ctx)
                 projections = {
                     "proj_min": round(proj["min"]["mean"], 1),
@@ -188,8 +295,27 @@ def build_predictions_for_date(target_date):
 
         home_roster = _roster_with_injury_status(hid, home_injuries, data_cache)
         away_roster = _roster_with_injury_status(aid, away_injuries, data_cache)
-        home_roster = _enrich_roster_with_recent(home_roster, player_recent)
-        away_roster = _enrich_roster_with_recent(away_roster, player_recent)
+        # Enrich with recent + context-aware projections.
+        home_roster = _enrich_roster_with_recent(
+            home_roster,
+            player_recent,
+            team_id=hid,
+            opp_team_id=aid,
+            team_stats=team_stats,
+            ortg_drtg=ortg_drtg,
+            injuries_for_team=home_injuries,
+            is_home=True,
+        )
+        away_roster = _enrich_roster_with_recent(
+            away_roster,
+            player_recent,
+            team_id=aid,
+            opp_team_id=hid,
+            team_stats=team_stats,
+            ortg_drtg=ortg_drtg,
+            injuries_for_team=away_injuries,
+            is_home=False,
+        )
 
         home_days = get_rest_days(hid, g["game_date_est"], last_game_dates)
         away_days = get_rest_days(aid, g["game_date_est"], last_game_dates)

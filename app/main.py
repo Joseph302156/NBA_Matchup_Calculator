@@ -17,9 +17,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from config import RECENT_STATS_GAMES
 from src.web_pipeline import build_predictions_for_date
 from app.chat import build_chat_context, get_reply
-from src.data.fetchers import get_player_last_n_game_logs
+from src.data.fetchers import get_player_last_n_game_logs, get_league_player_stats_per_game
+from src.player_projection import PlayerBaseStats, PlayerGameContext, project_player_stats
 
 app = FastAPI(title="NBA Matchup Calculator", version="1.0")
 
@@ -107,3 +109,44 @@ async def api_player_games(player_id: int, n: int = 5):
     """Last N game-by-game stat lines for a player (for player stats / chart)."""
     games = get_player_last_n_game_logs(player_id, n=n)
     return {"games": games}
+
+
+# Reused for /api/player-projection so we don't refetch league stats on every click.
+_player_stats_cache: dict = {}
+
+
+@app.get("/api/player-projection")
+async def api_player_projection(player_id: int, is_home: bool = False):
+    """On-demand projection for one player (season + recent blend, home bump). No defense/usage/rust on this path."""
+    stats_map = get_league_player_stats_per_game(_player_stats_cache)
+    row = stats_map.get(player_id, {})
+    if not row:
+        return {"projections": {}}
+    season_min = float(row.get("MIN") or 0.0)
+    season_pts = float(row.get("PTS") or 0.0)
+    season_ast = float(row.get("AST") or 0.0)
+    season_reb = float(row.get("REB") or 0.0)
+    season_stl = float(row.get("STL") or 0.0)
+    season_blk = float(row.get("BLK") or 0.0)
+    try:
+        logs = get_player_last_n_game_logs(player_id, n=RECENT_STATS_GAMES)
+    except Exception:
+        logs = []
+    recent_games = [
+        {"pts": g.get("pts", 0.0), "reb": g.get("reb", 0.0), "ast": g.get("ast", 0.0),
+         "stl": g.get("stl", 0.0), "blk": g.get("blk", 0.0), "min": g.get("min", 0.0)}
+        for g in logs
+    ]
+    base = PlayerBaseStats(
+        season_pts=season_pts, season_reb=season_reb, season_ast=season_ast,
+        season_stl=season_stl, season_blk=season_blk, season_min=season_min,
+        recent_games=recent_games,
+    )
+    ctx = PlayerGameContext(is_home=is_home)
+    proj = project_player_stats(base, ctx)
+    return {
+        "projections": {
+            k: {"mean": round(v["mean"], 1), "stdev": round(v["stdev"], 1)}
+            for k, v in proj.items()
+        }
+    }

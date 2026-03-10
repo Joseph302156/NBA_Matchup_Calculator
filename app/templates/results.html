@@ -86,7 +86,7 @@
               <tbody>
                 {% for p in game.away_roster %}
                 <tr class="status-{{ p.status | lower }}">
-                  <td><button type="button" class="player-name-btn" data-player-id="{{ p.player_id }}" data-player-name="{{ p.player_name | e }}" data-position="{{ p.position }}" data-min="{{ p.MIN }}" data-pts="{{ p.PTS }}" data-ast="{{ p.AST }}" data-reb="{{ p.REB }}" data-stl="{{ p.STL }}" data-blk="{{ p.BLK }}" data-proj-min="{{ p.proj_min }}" data-proj-pts="{{ p.proj_pts }}" data-proj-ast="{{ p.proj_ast }}" data-proj-reb="{{ p.proj_reb }}" data-proj-stl="{{ p.proj_stl }}" data-proj-blk="{{ p.proj_blk }}">{{ p.player_name }}</button></td>
+                  <td><button type="button" class="player-name-btn" data-player-id="{{ p.player_id }}" data-player-name="{{ p.player_name | e }}" data-position="{{ p.position }}" data-min="{{ p.MIN }}" data-pts="{{ p.PTS }}" data-ast="{{ p.AST }}" data-reb="{{ p.REB }}" data-stl="{{ p.STL }}" data-blk="{{ p.BLK }}">{{ p.player_name }}</button></td>
                   <td>{{ p.position }}</td>
                   <td><span class="badge {{ p.status | lower }}">{{ p.status }}</span></td>
                   <td>{{ (p.MIN | round(1)) }}</td>
@@ -127,7 +127,7 @@
               <tbody>
                 {% for p in game.home_roster %}
                 <tr class="status-{{ p.status | lower }}">
-                  <td><button type="button" class="player-name-btn" data-player-id="{{ p.player_id }}" data-player-name="{{ p.player_name | e }}" data-position="{{ p.position }}" data-min="{{ p.MIN }}" data-pts="{{ p.PTS }}" data-ast="{{ p.AST }}" data-reb="{{ p.REB }}" data-stl="{{ p.STL }}" data-blk="{{ p.BLK }}" data-proj-min="{{ p.proj_min }}" data-proj-pts="{{ p.proj_pts }}" data-proj-ast="{{ p.proj_ast }}" data-proj-reb="{{ p.proj_reb }}" data-proj-stl="{{ p.proj_stl }}" data-proj-blk="{{ p.proj_blk }}">{{ p.player_name }}</button></td>
+                  <td><button type="button" class="player-name-btn" data-player-id="{{ p.player_id }}" data-player-name="{{ p.player_name | e }}" data-position="{{ p.position }}" data-min="{{ p.MIN }}" data-pts="{{ p.PTS }}" data-ast="{{ p.AST }}" data-reb="{{ p.REB }}" data-stl="{{ p.STL }}" data-blk="{{ p.BLK }}">{{ p.player_name }}</button></td>
                   <td>{{ p.position }}</td>
                   <td><span class="badge {{ p.status | lower }}">{{ p.status }}</span></td>
                   <td>{{ (p.MIN | round(1)) }}</td>
@@ -466,13 +466,25 @@
             reb: btn.getAttribute('data-reb'),
             stl: btn.getAttribute('data-stl'),
             blk: btn.getAttribute('data-blk'),
-            proj_min: btn.getAttribute('data-proj-min'),
-            proj_pts: btn.getAttribute('data-proj-pts'),
-            proj_ast: btn.getAttribute('data-proj-ast'),
-            proj_reb: btn.getAttribute('data-proj-reb'),
-            proj_stl: btn.getAttribute('data-proj-stl'),
-            proj_blk: btn.getAttribute('data-proj-blk'),
           };
+          function fillSeasonTable(projections) {
+            playerCardSeasonTbody.innerHTML = '';
+            [['min', 'MIN'], ['pts', 'PTS'], ['ast', 'AST'], ['reb', 'REB'], ['stl', 'STL'], ['blk', 'BLK']].forEach(function(pair) {
+              var key = pair[0];
+              var label = pair[1];
+              var seasonVal = currentPlayerData[key];
+              var projText = '—';
+              if (projections && projections[key] != null && projections[key].mean != null) {
+                projText = Number(projections[key].mean).toFixed(1);
+              }
+              if (seasonVal != null && seasonVal !== '') {
+                var tr = document.createElement('tr');
+                var seasonText = parseFloat(seasonVal).toFixed(1);
+                tr.innerHTML = '<td>' + label + '</td><td>' + seasonText + '</td><td>' + projText + '</td>';
+                playerCardSeasonTbody.appendChild(tr);
+              }
+            });
+          }
           if (playerCardHeadshot) {
             var headshotUrl = 'https://cdn.nba.com/headshots/nba/latest/260x190/' + playerId + '.png';
             playerCardHeadshot.src = headshotUrl;
@@ -482,21 +494,14 @@
           }
           playerCardName.textContent = playerName;
           playerCardMeta.textContent = (team ? team + ' · ' : '') + (position || '');
-          playerCardSeasonTbody.innerHTML = '';
-          [['min', 'MIN'], ['pts', 'PTS'], ['ast', 'AST'], ['reb', 'REB'], ['stl', 'STL'], ['blk', 'BLK']].forEach(function(pair) {
-            var key = pair[0];
-            var label = pair[1];
-            var seasonVal = currentPlayerData[key];
-            var projKey = 'proj_' + key;
-            var projVal = currentPlayerData[projKey];
-            if (seasonVal != null && seasonVal !== '') {
-              var tr = document.createElement('tr');
-              var seasonText = parseFloat(seasonVal).toFixed(1);
-              var projText = (projVal != null && projVal !== '') ? parseFloat(projVal).toFixed(1) : '—';
-              tr.innerHTML = '<td>' + label + '</td><td>' + seasonText + '</td><td>' + projText + '</td>';
-              playerCardSeasonTbody.appendChild(tr);
-            }
-          });
+          fillSeasonTable(null);
+          var isHome = roster && roster.classList.contains('home');
+          fetch('/api/player-projection?player_id=' + encodeURIComponent(playerId) + '&is_home=' + (isHome ? 'true' : 'false'))
+            .then(function(r) { return r.json(); })
+            .then(function(projData) {
+              if (projData && projData.projections) fillSeasonTable(projData.projections);
+            })
+            .catch(function() {});
           fetch('/api/player-games?player_id=' + encodeURIComponent(playerId) + '&n=5')
             .then(function(r) { return r.json(); })
             .then(function(data) {

@@ -51,7 +51,9 @@ WIN_PCT_CEIL = 0.88           # maximum home win % (avoid 95–100% displays)
 
 # Player recent games: blend season stats with last N games for "how they're playing lately"
 RECENT_STATS_GAMES = 5         # last N games per player for recent averages
-RECENT_STATS_WEIGHT = 0.55     # 0 = season only, 1 = recent only; 0.55 = slight tilt to recent
+# 0 = season only, 1 = recent only.
+# We lean a bit more on recent form for player props (last 5 ≈ 65%, season ≈ 35%).
+RECENT_STATS_WEIGHT = 0.65
 
 # Long-term / no-recent-game: treat as Out if no game in this many days
 DAYS_SINCE_LAST_GAME_OUT = 14

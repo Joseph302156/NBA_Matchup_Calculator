@@ -1,0 +1,15 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# After pushing to GitHub: New → Blueprint → connect repo → apply.
+
+services:
+  - type: web
+    name: nba-matchup-calculator
+    runtime: python
+    plan: free  # change to starter for always-on / no cold starts
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.6"
+      - key: OPENAI_API_KEY
+        sync: false  # set in Render dashboard (Secrets)

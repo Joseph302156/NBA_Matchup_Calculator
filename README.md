@@ -33,12 +33,21 @@ uvicorn app.main:app --reload
 
 Then open http://127.0.0.1:8000 — choose a date and click **Calculate predictions**. Results show each game: away @ home, win % bar, pick, team ORtg/DRtg, full roster with MIN/PTS/AST/REB/STL/BLK and Playing/Out/Questionable status, and injury report.
 
+**Player card:** Click a player name to open a profile with headshot, season averages, **projected stats** for the upcoming game (blend of season + last 5 games, home-court bump, and extra minutes when a star teammate is out), and a bar chart of their last 5 games (switchable by stat: PTS, AST, REB, STL, BLK, MIN). Projections are computed **on demand** when you open the card (not at page load) to keep date selection fast.
+
 On the right side of the results page there is an **AI assistant chat panel**. It uses OpenAI (model `gpt-4o-mini` by default) plus the current matchup context to answer questions about:
 
 - Why a team is favored, which players matter most, how injuries/rest affect the edge
 - How the model works for this specific game
 
 If `OPENAI_API_KEY` is not set, the chat panel will tell you to configure the key instead of calling the API.
+
+### APIs used by the results page
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/player-games?player_id=...&n=5` | Last N game-by-game stat lines (for the bar chart). |
+| `GET /api/player-projection?player_id=...&is_home=true\|false&team_id=...` | On-demand projected stats (mean per stat). Optional `team_id` enables “star out” minutes bump when a teammate with ≥18 PPG is Out. |
 
 ## Run (CLI)
 
@@ -72,6 +81,7 @@ python main.py --json       # machine-readable JSON
 | **Team ORtg/DRtg** | TeamEstimatedMetrics | E_OFF_RATING, E_DEF_RATING per team |
 | **Player stats** | CommonTeamRoster + LeagueDashPlayerStats (PerGame) | Season MIN, PTS, AST, REB, STL, BLK; blended with **last 5 games** (LeagueGameLog) so recent form matters; injured players excluded from "available value" |
 | **Stat importance** | `src/analysis/stat_importance.py` | Correlation of team PTS/AST/REB/STL/BLK with W_PCT → weights for player contribution |
+| **Projected player stats** | `src/player_projection.py` + on-demand API | Shown in player card: blend of season + last 5 games (65% recent / 35% season), home-court +3% to PTS/AST, and +3–5 min when a star teammate (≥18 PPG) is Out; computed only when the user opens a player’s card |
 
 ## How win % is calculated
 
@@ -88,13 +98,25 @@ python main.py --json       # machine-readable JSON
    - `PLAYER_VALUE_WEIGHT`: how much “who’s playing and their stats” matters.  
    - `LOGISTIC_SCALE`: larger = softer curve (fewer extremes).  
    - `WIN_PCT_FLOOR` / `WIN_PCT_CEIL`: clamp range.  
-   - `RECENT_STATS_GAMES` and `RECENT_STATS_WEIGHT`: last N games and blend with season (e.g. 0.55 = slight tilt to recent).
+   - `RECENT_STATS_GAMES` and `RECENT_STATS_WEIGHT`: last N games and blend with season (e.g. 0.65 = stronger tilt to recent for player projections).
+
+### How projected player stats are calculated
+
+Used in the player card when you click a player. Implemented in `src/player_projection.py` and requested on demand via `/api/player-projection`.
+
+1. **Baseline** — Blend season per-game averages with last-5-game averages (`RECENT_STATS_WEIGHT` = 0.65 toward recent).
+2. **Context (when available)**  
+   - **Home:** +3% to PTS and AST.  
+   - **Star teammate out:** If `team_id` is sent and a teammate with ≥18 PPG is Out (injury report), add **+4 minutes** to projected MIN (configurable as `STAR_OUT_MINUTES_BUMP` in `app/main.py`).  
+   Other factors (opponent defense, usage bump, rust from games missed) are in the model but not yet wired in the on-demand API path.
+3. **Output** — Mean (and stdev) per stat (MIN, PTS, AST, REB, STL, BLK); the UI shows the mean in the "Proj" column next to season average.
 
 ## Improving later
 
 - **Player-level:** Use roster + player impact (e.g. BPM, VORP) to adjust for “who’s in”.
 - **Model:** Replace logistic-style formula with a proper model (e.g. Elo, Poisson, or ML) and backtest.
-- **Refresh:** Run as a daemon or cron; optionally serve via FastAPI and a small frontend.
+- **Projections:** Wire opponent defense, pace, usage, and rust (games missed) into the on-demand projection API so the player card uses full context.
+- **Refresh:** Run as a daemon or cron for automated picks.
 
 ## Project layout
 
@@ -106,8 +128,9 @@ app/
   templates/        # index.html, results.html
   static/style.css  # dark theme, game cards, rosters, badges
 src/
-  data/fetchers.py  # games, team stats, roster, player stats, ORtg/DRtg, injuries, rest
-  web_pipeline.py   # build_predictions_for_date() for web
+  data/fetchers.py   # games, team stats, roster, player stats, ORtg/DRtg, injuries, rest
+  web_pipeline.py    # build_predictions_for_date() for web (rosters + recent averages only; no per-player projection at load)
+  player_projection.py  # projected stats: season+recent blend, home, star-out minutes bump
   analysis/stat_importance.py
   model.py
 requirements.txt

@@ -5,7 +5,7 @@ name: Warm predictions cache
 on:
   workflow_dispatch: {}
     schedule:
-      - cron: "0 */2 * * *"
+      - cron: "*/60"
 
 jobs:
   warm:

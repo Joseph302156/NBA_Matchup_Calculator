@@ -21,7 +21,17 @@ from nba_api.stats.library.parameters import PerModeDetailed, PlayerOrTeamAbbrev
 from nba_api.stats.static import teams as static_teams
 from nba_api.live.nba.endpoints import scoreboard
 
-from config import current_season, UPCOMING_DAYS, RECENT_GAMES_N, REQUEST_DELAY, DAYS_SINCE_LAST_GAME_OUT, RECENT_STATS_GAMES, RECENT_STATS_WEIGHT
+from config import (
+    current_season,
+    UPCOMING_DAYS,
+    RECENT_GAMES_N,
+    REQUEST_DELAY,
+    DAYS_SINCE_LAST_GAME_OUT,
+    RECENT_STATS_GAMES,
+    RECENT_STATS_WEIGHT,
+    PIPELINE_CACHE_TTL_SECONDS,
+)
+from src.cache_utils import ttl_get
 
 
 def _season():
@@ -180,28 +190,53 @@ def get_team_season_stats():
     return by_id
 
 
+def _fetch_team_roster_nba(team_id: int):
+    """CommonTeamRoster with retries (NBA stats often ReadTimeout)."""
+    season = _season()
+    tid = int(team_id)
+    transient = (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError)
+    last_err = None
+    for attempt in range(3):
+        try:
+            e = CommonTeamRoster(team_id=str(tid), season=season)
+            time.sleep(REQUEST_DELAY)
+            dfs = e.get_data_frames()
+            roster_df = dfs[0] if dfs else None
+            if roster_df is None or roster_df.empty:
+                return []
+            out = []
+            for _, row in roster_df.iterrows():
+                out.append({
+                    "player_id": int(row["PLAYER_ID"]),
+                    "player_name": (row.get("PLAYER") or row.get("PLAYER_NAME") or "").strip(),
+                    "position": (row.get("POSITION") or "").strip(),
+                })
+            return out
+        except transient as err:
+            last_err = err
+            time.sleep(1.0 + 2.0 * attempt)
+            continue
+    if last_err is not None:
+        raise last_err
+    return []
+
+
 def get_team_roster(team_id, cache=None):
-    """Current roster: list of {player_id, player_name, position}. Optional cache avoids repeat API calls per request."""
+    """
+    Current roster: list of {player_id, player_name, position}.
+    Request-scoped cache + TTL cache (same window as pipeline) so reloads don't re-hit NBA for every team.
+    """
     key = f"roster_{int(team_id)}"
     if cache is not None and key in cache:
         return cache[key]
-    season = _season()
-    e = CommonTeamRoster(team_id=str(team_id), season=season)
-    time.sleep(REQUEST_DELAY)
-    dfs = e.get_data_frames()
-    roster_df = dfs[0] if dfs else None
-    if roster_df is None or roster_df.empty:
-        return []
-    out = []
-    for _, row in roster_df.iterrows():
-        out.append({
-            "player_id": int(row["PLAYER_ID"]),
-            "player_name": (row.get("PLAYER") or row.get("PLAYER_NAME") or "").strip(),
-            "position": (row.get("POSITION") or "").strip(),
-        })
+
+    def _from_nba():
+        return _fetch_team_roster_nba(int(team_id))
+
+    roster = ttl_get(f"nba:roster:{int(team_id)}", PIPELINE_CACHE_TTL_SECONDS, _from_nba)
     if cache is not None:
-        cache[key] = out
-    return out
+        cache[key] = roster
+    return roster
 
 
 def get_league_player_stats_per_game(cache=None):

@@ -21,7 +21,8 @@ REQUEST_DELAY = 0.6
 
 # Web pipeline: cache league-wide NBA responses this many seconds (0 = off).
 # Speeds repeat /results loads and reduces rate-limit risk on Render.
-PIPELINE_CACHE_TTL_SECONDS = float(os.environ.get("PIPELINE_CACHE_TTL_SECONDS", "300"))
+# Default 30 min: fewer slow refetches; raise/lower via env or edit. 0 = disable cache.
+PIPELINE_CACHE_TTL_SECONDS = float(os.environ.get("PIPELINE_CACHE_TTL_SECONDS", "1800"))
 
 # Max parallel NBA calls for recent form + last-game prefetch (1 = sequential).
 PIPELINE_PARALLEL_WORKERS = max(1, int(os.environ.get("PIPELINE_PARALLEL_WORKERS", "6")))

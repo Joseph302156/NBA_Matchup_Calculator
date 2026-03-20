@@ -46,7 +46,7 @@ If `OPENAI_API_KEY` is not set, the chat panel will tell you to configure the ke
 
 | Variable | Default | Effect |
 |----------|---------|--------|
-| `PIPELINE_CACHE_TTL_SECONDS` | `300` | Reuses NBA/ESPN-heavy responses for this many seconds (schedule per date, team stats, injuries, ORtg/DRtg + league recent-player rollup, stat weights). Set `0` to disable. |
+| `PIPELINE_CACHE_TTL_SECONDS` | `1800` (30 min) | Reuses NBA/ESPN-heavy responses for this many seconds (schedule per date, team stats, injuries, ORtg/DRtg + league recent-player rollup, stat weights). Set `0` to disable. |
 | `PIPELINE_PARALLEL_WORKERS` | `6` | Parallel fetches for team recent form + each team’s last game date (rest). Lower (e.g. `2`) if you hit NBA rate limits. |
 
 ### APIs used by the results page

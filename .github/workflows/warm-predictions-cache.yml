@@ -5,7 +5,7 @@ name: Warm predictions cache
 on:
   workflow_dispatch:
   schedule:
-    # Every hour at :00 UTC (valid 5-field cron). Use */45 * * * * for every 45 min, etc.
+    # Every hour UTC; the step below only warms during 08:00–22:00 America/Los_Angeles (PT).
     - cron: "0 * * * *"
 
 jobs:
@@ -25,4 +25,18 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
-      - run: python scripts/warm_predictions_cache.py
+      - name: Warm predictions cache
+        run: |
+          # Manual "Run workflow" always runs. Scheduled runs only 8am–10pm Pacific.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "workflow_dispatch → run warm (no time window)"
+            python scripts/warm_predictions_cache.py
+            exit $?
+          fi
+          H=$(python -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('America/Los_Angeles')).hour)")
+          if [ "$H" -lt 8 ] || [ "$H" -gt 22 ]; then
+            echo "Skip scheduled warm: America/Los_Angeles hour=$H (window 08–22 inclusive)"
+            exit 0
+          fi
+          echo "America/Los_Angeles hour=$H → running warm"
+          python scripts/warm_predictions_cache.py

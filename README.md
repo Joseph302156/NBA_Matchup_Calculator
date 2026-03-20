@@ -23,6 +23,25 @@ cp .env.example .env
 
 The web app loads `.env` automatically via `python-dotenv` (`load_dotenv()` in `app/main.py`).
 
+### Predictions cache (Postgres / Supabase) — optional
+
+For **fast first load** on `/results`, you can store each date’s full pipeline output in Postgres and refresh on a schedule.
+
+1. **Create a Supabase project** (or any Postgres). In **SQL Editor**, run `sql/predictions_date_cache.sql`.
+2. **Connection string:** Project Settings → Database → URI. Set `DATABASE_URL` in `.env` / Render (use **Session mode** pooler or direct `5432`; include `?sslmode=require` if required).
+3. **Install:** `pip install -r requirements.txt` (adds `psycopg`).
+4. **Warm rows** for today through today+14 days:
+   ```bash
+   export DATABASE_URL="postgresql://..."
+   python scripts/warm_predictions_cache.py
+   ```
+5. **App behavior:** If `DATABASE_URL` is set and a row exists for the requested date, `/results` and `/api/chat` **read from DB**. Otherwise they use the **live** pipeline (same as before). Optional `PREDICTIONS_DB_MAX_AGE_SECONDS` forces a live refresh when the row is too old.
+6. **Cron every 30–60 min:**
+   - **GitHub Actions** (recommended for long runs): scheduled workflow that runs `python scripts/warm_predictions_cache.py` with `DATABASE_URL` in repo secrets.
+   - **HTTP trigger:** `POST /internal/refresh-predictions-cache` with header `Authorization: Bearer <CRON_SECRET>` and env `CRON_SECRET` set. The handler **queues** work in a background task and returns immediately. On **Render free tier**, the instance may sleep right after the response and **kill** the background warm — prefer the **script** on a scheduler, or a **paid** always-on instance, for reliable warms.
+
+Env vars: see `.env.example` (`DATABASE_URL`, `CRON_SECRET`, `WARM_CACHE_DAYS_AHEAD`, `PREDICTIONS_DB_MAX_AGE_SECONDS`).
+
 ## Web app (full-stack)
 
 Pick a date and view matchup predictions with rosters, statlines, injury report, ORtg/DRtg, and win %.

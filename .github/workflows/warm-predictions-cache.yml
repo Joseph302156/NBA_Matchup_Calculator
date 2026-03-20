@@ -1,0 +1,23 @@
+# Optional: warm predictions_date_cache (add repo secret DATABASE_URL, then enable schedule).
+# Repo → Settings → Secrets and variables → Actions → New secret: DATABASE_URL
+name: Warm predictions cache
+
+on:
+  workflow_dispatch: {}
+  # After DATABASE_URL is set, uncomment for automatic warms every 45 min (UTC):
+  # schedule:
+  #   - cron: "*/45 * * * *"
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: python scripts/warm_predictions_cache.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          WARM_CACHE_DAYS_AHEAD: "14"

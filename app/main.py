@@ -11,7 +11,7 @@ load_dotenv()  # load .env from project root so OPENAI_API_KEY is available
 from datetime import date, timedelta
 from typing import Optional
 
-from fastapi import FastAPI, Request, Form
+from fastapi import BackgroundTasks, FastAPI, Request, Form, Header, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from config import RECENT_STATS_GAMES
 from src.web_pipeline import build_predictions_for_date
+from src.predictions_db import is_configured as predictions_db_configured, try_get_cached, warm_date_range
 from app.chat import build_chat_context, get_reply
 from src.data.fetchers import (
     get_player_last_n_game_logs,
@@ -40,6 +41,23 @@ templates.env.filters["tojson"] = lambda v: json.dumps(v)
 
 if os.path.exists(os.path.join(BASE, "static")):
     app.mount("/static", StaticFiles(directory=os.path.join(BASE, "static")), name="static")
+
+
+def _background_warm_predictions(start: date, end: date) -> None:
+    try:
+        warm_date_range(start, end)
+    except Exception as exc:
+        print(f"[predictions-cache] warm failed: {exc}", flush=True)
+
+
+def load_predictions_for_web(date_str: str) -> dict:
+    """Use Postgres cache when present; otherwise live NBA pipeline."""
+    key = (date_str or "").strip()[:10]
+    if predictions_db_configured():
+        cached = try_get_cached(key)
+        if cached is not None:
+            return cached
+    return build_predictions_for_date(key)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -70,7 +88,7 @@ async def results_get(request: Request, date_str: str = ""):
                 "max_date": today + timedelta(days=180),
             },
         )
-    data = build_predictions_for_date(date_str)
+    data = load_predictions_for_web(date_str)
     data["request"] = request
     data["chat_context"] = build_chat_context(data["date_display"], data.get("games") or []) if data.get("games") else {}
     return templates.TemplateResponse("results.html", data)
@@ -91,7 +109,7 @@ async def results_post(request: Request, game_date: str = Form(...)):
                 "max_date": today + timedelta(days=180),
             },
         )
-    data = build_predictions_for_date(game_date.strip())
+    data = load_predictions_for_web(game_date.strip())
     data["request"] = request
     data["chat_context"] = build_chat_context(data["date_display"], data.get("games") or []) if data.get("games") else {}
     return templates.TemplateResponse("results.html", data)
@@ -107,7 +125,7 @@ async def api_chat(body: ChatBody):
     """Chat endpoint: answer questions about the matchup using server-side matchup data."""
     # Use the requested date if provided; otherwise fall back to today's date string.
     target_date = (body.game_date or date.today().strftime("%Y-%m-%d")).strip()
-    data = build_predictions_for_date(target_date)
+    data = load_predictions_for_web(target_date)
     ctx = build_chat_context(data.get("date_display", target_date), data.get("games") or [])
     reply = get_reply(body.message, body.game_index, ctx)
     return {"reply": reply}
@@ -184,4 +202,38 @@ async def api_player_projection(player_id: int, is_home: bool = False, team_id: 
             k: {"mean": round(v["mean"], 1), "stdev": round(v["stdev"], 1)}
             for k, v in proj.items()
         }
+    }
+
+
+@app.post("/internal/refresh-predictions-cache")
+def internal_refresh_predictions_cache(
+    background_tasks: BackgroundTasks,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Queue warm of predictions_date_cache for today .. today+WARM_CACHE_DAYS_AHEAD.
+    Returns immediately (warm runs in background) so HTTP cron probes don't time out.
+
+    Authorization: Bearer <CRON_SECRET>
+
+    For a blocking run with exit codes (e.g. local CI), use:
+      python scripts/warm_predictions_cache.py
+    """
+    secret = (os.environ.get("CRON_SECRET") or "").strip()
+    if not secret or (authorization or "").strip() != f"Bearer {secret}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if not predictions_db_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="DATABASE_URL not set or psycopg missing — cannot warm cache.",
+        )
+    days = int(os.environ.get("WARM_CACHE_DAYS_AHEAD", "14"))
+    today = date.today()
+    end = today + timedelta(days=days)
+    background_tasks.add_task(_background_warm_predictions, today, end)
+    return {
+        "status": "accepted",
+        "from": today.isoformat(),
+        "through": end.isoformat(),
+        "days": days,
     }

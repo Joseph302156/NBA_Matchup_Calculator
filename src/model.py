@@ -34,6 +34,20 @@ def _form_rate(form_list):
     return sum(form_list) / len(form_list) if form_list else 0.5
 
 
+def _logistic_win_prob(diff: float, scale: float) -> float:
+    """
+    P = 1 / (1 + exp(-diff/scale)). Numerically stable: avoids OverflowError when
+    |diff| is huge (e.g. lopsided injury/roster edge).
+    """
+    if scale <= 0:
+        scale = LOGISTIC_SCALE
+    z = diff / scale
+    if z >= 0:
+        return 1.0 / (1.0 + math.exp(-z))
+    ez = math.exp(z)  # z < 0 => ez in (0, 1)
+    return ez / (1.0 + ez)
+
+
 def _injury_penalty(injury_list):
     """Sum weighted penalty for Out (1.0), Questionable (0.4), Doubtful (0.4)."""
     if not injury_list:
@@ -161,8 +175,7 @@ def predict_game(
             away_str += REST_EXTRA_BONUS_PTS
 
     diff = home_str - away_str
-    # Softer curve: win_pct = 1 / (1 + exp(-diff/scale)). Larger scale = less extreme %.
-    raw = 1 / (1 + math.exp(-diff / LOGISTIC_SCALE))
+    raw = _logistic_win_prob(diff, LOGISTIC_SCALE)
     win_pct_home = max(WIN_PCT_FLOOR, min(WIN_PCT_CEIL, raw))
     win_pct_away = 1 - win_pct_home
     pick_home = win_pct_home >= 0.5

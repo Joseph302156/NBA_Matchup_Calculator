@@ -1,9 +1,11 @@
 """
 Build full game payload for web: rosters with statlines, injury status, ORtg/DRtg, win%.
 """
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
-from config import RECENT_GAMES_N
+from config import RECENT_GAMES_N, PIPELINE_CACHE_TTL_SECONDS, PIPELINE_PARALLEL_WORKERS
+from src.cache_utils import ttl_get
 from src.data.fetchers import (
     get_games_for_date,
     get_team_season_stats,
@@ -11,13 +13,63 @@ from src.data.fetchers import (
     get_injuries,
     get_rest_days,
     get_team_ortg_drtg,
+    get_league_player_stats_per_game,
     get_available_player_value,
     get_roster_with_stats,
     get_player_recent_stats,
+    get_last_game_date,
     _normalize_name_for_match,
 )
 from src.analysis.stat_importance import get_player_stat_weights
 from src.model import predict_game
+
+
+def _league_endpoint_bundle():
+    """Single TTL entry: ORtg/DRtg + league recent-player rollup + season player stats (3 NBA calls)."""
+    c = {}
+    get_team_ortg_drtg(c)
+    get_player_recent_stats(c)
+    get_league_player_stats_per_game(c)
+    return c
+
+
+def _recent_form_parallel(team_ids, n):
+    ids = list(team_ids)
+    if not ids:
+        return {}
+    if PIPELINE_PARALLEL_WORKERS <= 1:
+        return {tid: get_recent_form(tid, n) for tid in ids}
+    out = {}
+    max_w = min(PIPELINE_PARALLEL_WORKERS, len(ids))
+    with ThreadPoolExecutor(max_workers=max_w) as ex:
+        futures = {ex.submit(get_recent_form, tid, n): tid for tid in ids}
+        for fut in as_completed(futures):
+            tid = futures[fut]
+            try:
+                out[tid] = fut.result()
+            except Exception:
+                out[tid] = []
+    return out
+
+
+def _prefetch_team_last_game_dates(team_ids):
+    """One NBA TeamGameLog per unique team; parallelized."""
+    ids = list(team_ids)
+    if not ids:
+        return {}
+    if PIPELINE_PARALLEL_WORKERS <= 1:
+        return {tid: get_last_game_date(tid) for tid in ids}
+    out = {}
+    max_w = min(PIPELINE_PARALLEL_WORKERS, len(ids))
+    with ThreadPoolExecutor(max_workers=max_w) as ex:
+        futures = {ex.submit(get_last_game_date, tid): tid for tid in ids}
+        for fut in as_completed(futures):
+            tid = futures[fut]
+            try:
+                out[tid] = fut.result()
+            except Exception:
+                out[tid] = None
+    return out
 
 
 def _roster_with_injury_status(team_id, injuries_list, player_stats_cache):
@@ -105,7 +157,12 @@ def build_predictions_for_date(target_date):
         except ValueError:
             return {"date": date_str, "date_display": date_str, "games": [], "error": "Invalid date"}
 
-    games = get_games_for_date(date_obj)
+    ttl = PIPELINE_CACHE_TTL_SECONDS
+
+    def _games_factory():
+        return get_games_for_date(date_obj)
+
+    games = ttl_get(f"nba:games:{date_str}", ttl, _games_factory)
     if not games:
         return {
             "date": date_str,
@@ -114,24 +171,26 @@ def build_predictions_for_date(target_date):
             "error": None,
         }
 
-    team_stats = get_team_season_stats()
+    team_stats = ttl_get("nba:team_season_stats", ttl, get_team_season_stats)
     team_ids = set()
     for g in games:
         team_ids.add(g["home_team_id"])
         team_ids.add(g["away_team_id"])
-    recent_form = {tid: get_recent_form(tid, RECENT_GAMES_N) for tid in team_ids}
-    injuries = get_injuries()
-    data_cache = {}
-    last_game_dates = {}
-    ortg_drtg = get_team_ortg_drtg(data_cache)
-    try:
-        player_recent = get_player_recent_stats(data_cache)
-    except Exception:
-        player_recent = {}
-    try:
-        player_weights = get_player_stat_weights()
-    except Exception:
-        player_weights = {"PTS": 1.0, "AST": 0.5, "REB": 0.4, "STL": 0.6, "BLK": 0.6}
+    recent_form = _recent_form_parallel(team_ids, RECENT_GAMES_N)
+    injuries = ttl_get("nba:injuries", ttl, get_injuries)
+    bundle = ttl_get("nba:league_endpoint_bundle", ttl, _league_endpoint_bundle)
+    data_cache = dict(bundle)
+    last_game_dates = _prefetch_team_last_game_dates(team_ids)
+    ortg_drtg = data_cache.get("ortg_drtg") or {}
+    player_recent = data_cache.get("player_recent_stats") or {}
+
+    def _safe_player_weights():
+        try:
+            return get_player_stat_weights()
+        except Exception:
+            return {"PTS": 1.0, "AST": 0.5, "REB": 0.4, "STL": 0.6, "BLK": 0.6}
+
+    player_weights = ttl_get("nba:player_stat_weights", ttl, _safe_player_weights)
 
     games_payload = []
     for g in games:

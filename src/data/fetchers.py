@@ -180,8 +180,11 @@ def get_team_season_stats():
     return by_id
 
 
-def get_team_roster(team_id):
-    """Current roster: list of {player_id, player_name, position}."""
+def get_team_roster(team_id, cache=None):
+    """Current roster: list of {player_id, player_name, position}. Optional cache avoids repeat API calls per request."""
+    key = f"roster_{int(team_id)}"
+    if cache is not None and key in cache:
+        return cache[key]
     season = _season()
     e = CommonTeamRoster(team_id=str(team_id), season=season)
     time.sleep(REQUEST_DELAY)
@@ -196,6 +199,8 @@ def get_team_roster(team_id):
             "player_name": (row.get("PLAYER") or row.get("PLAYER_NAME") or "").strip(),
             "position": (row.get("POSITION") or "").strip(),
         })
+    if cache is not None:
+        cache[key] = out
     return out
 
 
@@ -259,7 +264,7 @@ def get_roster_with_stats(team_id, player_stats_cache=None):
     Roster for team with per-game stats (MIN, PTS, AST, REB, STL, BLK).
     Returns list of {player_id, player_name, position, MIN, PTS, AST, REB, STL, BLK}.
     """
-    roster = get_team_roster(team_id)
+    roster = get_team_roster(team_id, player_stats_cache)
     stats_map = get_league_player_stats_per_game(player_stats_cache)
     out = []
     for p in roster:

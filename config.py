@@ -1,4 +1,5 @@
 """App config. Override with env vars if you add dotenv later."""
+import os
 from datetime import datetime
 
 def current_season():
@@ -17,6 +18,13 @@ RECENT_GAMES_N = 5
 REFRESH_MINUTES = 30
 # NBA.com can rate-limit; delay between heavy requests (seconds)
 REQUEST_DELAY = 0.6
+
+# Web pipeline: cache league-wide NBA responses this many seconds (0 = off).
+# Speeds repeat /results loads and reduces rate-limit risk on Render.
+PIPELINE_CACHE_TTL_SECONDS = float(os.environ.get("PIPELINE_CACHE_TTL_SECONDS", "300"))
+
+# Max parallel NBA calls for recent form + last-game prefetch (1 = sequential).
+PIPELINE_PARALLEL_WORKERS = max(1, int(os.environ.get("PIPELINE_PARALLEL_WORKERS", "6")))
 
 # Model: home court and form
 # Softer home-court advantage so venue matters less relative to who's playing.

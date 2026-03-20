@@ -40,7 +40,12 @@ For **fast first load** on `/results`, you can store each date’s full pipeline
    - **GitHub Actions** (recommended for long runs): scheduled workflow that runs `python scripts/warm_predictions_cache.py` with `DATABASE_URL` in repo secrets.
    - **HTTP trigger:** `POST /internal/refresh-predictions-cache` with header `Authorization: Bearer <CRON_SECRET>` and env `CRON_SECRET` set. The handler **queues** work in a background task and returns immediately. On **Render free tier**, the instance may sleep right after the response and **kill** the background warm — prefer the **script** on a scheduler, or a **paid** always-on instance, for reliable warms.
 
-Env vars: see `.env.example` (`DATABASE_URL`, `CRON_SECRET`, `WARM_CACHE_DAYS_AHEAD`, `PREDICTIONS_DB_MAX_AGE_SECONDS`).
+Env vars: see `.env.example` (`DATABASE_URL`, `CRON_SECRET`, `WARM_CACHE_DAYS_AHEAD`, `PREDICTIONS_DB_MAX_AGE_SECONDS`, `WARM_CACHE_PAUSE_SECONDS`).
+
+**Warm script failing (NBA timeout / Supabase “failed to resolve host”):**  
+- Run gentler: `WARM_CACHE_PAUSE_SECONDS=8 PIPELINE_PARALLEL_WORKERS=1 python scripts/warm_predictions_cache.py`  
+- **DNS:** disable VPN, try another network, or set DNS to `1.1.1.1` / `8.8.8.8`. In Supabase, try the **pooler** URI (different hostname than `db....supabase.co`) under **Database → Connection string**.  
+- Re-run the script; partial `OK` rows are kept — failed dates can be retried later.
 
 ## Web app (full-stack)
 

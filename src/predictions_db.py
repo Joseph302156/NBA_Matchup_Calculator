@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -27,6 +28,14 @@ def get_database_url() -> Optional[str]:
 
 def is_configured() -> bool:
     return bool(get_database_url() and psycopg is not None)
+
+
+def _warm_pause_seconds() -> float:
+    """Sleep between dates when warming cache (easier on NBA + DNS)."""
+    try:
+        return max(0.0, float(os.environ.get("WARM_CACHE_PAUSE_SECONDS", "5")))
+    except ValueError:
+        return 5.0
 
 
 def _max_age_seconds() -> Optional[int]:
@@ -99,14 +108,10 @@ def try_get_cached(game_date_str: str) -> Optional[dict[str, Any]]:
         return None
 
 
-def upsert_predictions(game_date_str: str, payload: dict[str, Any]) -> None:
-    """Store full pipeline dict for a date (UPSERT)."""
-    if not is_configured():
-        raise RuntimeError("DATABASE_URL not set or psycopg not installed")
+def _upsert_predictions_once(game_date_str: str, body: dict[str, Any]) -> None:
     url = get_database_url()
-    assert url
-    body = json.loads(json.dumps(payload, default=str))
-    with psycopg.connect(url) as conn:
+    assert url and psycopg and Json
+    with psycopg.connect(url, connect_timeout=30) as conn:
         ensure_table(conn)
         with conn.cursor() as cur:
             cur.execute(
@@ -120,6 +125,41 @@ def upsert_predictions(game_date_str: str, payload: dict[str, Any]) -> None:
                 (game_date_str[:10], Json(body)),
             )
         conn.commit()
+
+
+def _upsert_transient_msg(msg: str) -> bool:
+    m = msg.lower()
+    return any(
+        s in m
+        for s in (
+            "resolve",
+            "nodename",
+            "connection",
+            "timeout",
+            "closed",
+            "eof",
+            "broken pipe",
+            "server closed",
+            "ssl",
+            "network",
+        )
+    )
+
+
+def upsert_predictions(game_date_str: str, payload: dict[str, Any]) -> None:
+    """Store full pipeline dict for a date (UPSERT), with retries for flaky DNS/network."""
+    if not is_configured():
+        raise RuntimeError("DATABASE_URL not set or psycopg not installed")
+    body = json.loads(json.dumps(payload, default=str))
+    for attempt in range(4):
+        try:
+            _upsert_predictions_once(game_date_str, body)
+            return
+        except Exception as e:
+            if attempt < 3 and _upsert_transient_msg(str(e)):
+                time.sleep(1.5 * (2**attempt))
+                continue
+            raise
 
 
 def warm_date_range(
@@ -139,6 +179,7 @@ def warm_date_range(
     stats: dict[str, Any] = {"ok": 0, "failed": 0, "errors": []}
     d = start
     one_day = timedelta(days=1)
+    pause = _warm_pause_seconds()
     while d <= end:
         ds = d.isoformat()
         try:
@@ -151,4 +192,6 @@ def warm_date_range(
             if not skip_on_pipeline_error:
                 raise
         d += one_day
+        if d <= end and pause > 0:
+            time.sleep(pause)
     return stats

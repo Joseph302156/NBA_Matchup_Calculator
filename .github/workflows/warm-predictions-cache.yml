@@ -1,7 +1,7 @@
-# Optional: warm predictions_date_cache (add repo secret DATABASE_URL, then enable schedule).
-# Repo → Settings → Secrets and variables → Actions → New secret: DATABASE_URL
+# python3 scripts/warm_predictions_cache.py 
 # stats.nba.com often times out from GitHub-hosted IPs; reliable warm = local cron or self-hosted runner.
 # WARM_CIJOB_NOFAIL keeps the cron green when NBA blocks the runner (cache may stay stale).
+
 name: Warm predictions cache
 
 on:

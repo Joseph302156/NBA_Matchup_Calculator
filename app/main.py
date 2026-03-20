@@ -227,7 +227,7 @@ def internal_refresh_predictions_cache(
             status_code=503,
             detail="DATABASE_URL not set or psycopg missing — cannot warm cache.",
         )
-    days = int(os.environ.get("WARM_CACHE_DAYS_AHEAD", "14"))
+    days = int(os.environ.get("WARM_CACHE_DAYS_AHEAD", "7"))
     today = date.today()
     end = today + timedelta(days=days)
     background_tasks.add_task(_background_warm_predictions, today, end)

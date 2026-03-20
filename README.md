@@ -30,7 +30,7 @@ For **fast first load** on `/results`, you can store each date’s full pipeline
 1. **Create a Supabase project** (or any Postgres). In **SQL Editor**, run `sql/predictions_date_cache.sql`.
 2. **Connection string:** Project Settings → Database → URI. Set `DATABASE_URL` in `.env` / Render (use **Session mode** pooler or direct `5432`; include `?sslmode=require` if required).
 3. **Install:** `pip install -r requirements.txt` (adds `psycopg`).
-4. **Warm rows** for today through today+14 days:
+4. **Warm rows** for today through today+7 days (override with `WARM_CACHE_DAYS_AHEAD`):
    ```bash
    export DATABASE_URL="postgresql://..."
    python scripts/warm_predictions_cache.py

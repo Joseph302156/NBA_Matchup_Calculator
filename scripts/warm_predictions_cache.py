@@ -8,7 +8,7 @@ Usage (from project root):
   python scripts/warm_predictions_cache.py
 
 Env:
-  WARM_CACHE_DAYS_AHEAD — default 14 (matches typical “next two weeks” warm window).
+  WARM_CACHE_DAYS_AHEAD — default 7 (today .. today+7).
 """
 import os
 import sys
@@ -40,7 +40,7 @@ def main() -> int:
         print("  Run: python scripts/test_database_connection.py", file=sys.stderr)
         return 1
 
-    days = int(os.environ.get("WARM_CACHE_DAYS_AHEAD", "14"))
+    days = int(os.environ.get("WARM_CACHE_DAYS_AHEAD", "7"))
     today = date.today()
     end = today + timedelta(days=days)
     print(f"Warming predictions cache: {today.isoformat()} .. {end.isoformat()} ({days} days ahead)")

@@ -3,9 +3,10 @@
 name: Warm predictions cache
 
 on:
-  workflow_dispatch: {}
-    schedule:
-      - cron: "*/60"
+  workflow_dispatch:
+  schedule:
+    # Every hour at :00 UTC (valid 5-field cron). Use */45 * * * * for every 45 min, etc.
+    - cron: "0 * * * *"
 
 jobs:
   warm:

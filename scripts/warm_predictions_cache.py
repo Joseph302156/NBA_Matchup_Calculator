@@ -9,6 +9,9 @@ Usage (from project root):
 
 Env:
   WARM_CACHE_DAYS_AHEAD — default 7 (today .. today+7).
+  WARM_DATE_MAX_ATTEMPTS — per-date retries for transient NBA timeouts (default 3).
+  WARM_CIJOB_NOFAIL — if "1"/"true", exit 0 even when some dates failed (use on GHA when
+    stats.nba.com blocks datacenter IPs; still prints failures on stderr).
 """
 import os
 import sys
@@ -48,7 +51,21 @@ def main() -> int:
     print(f"OK: {stats['ok']}  Failed: {stats['failed']}")
     for err in stats.get("errors", []):
         print(f"  {err['date']}: {err['error']}", file=sys.stderr)
-    return 0 if stats["failed"] == 0 else 2
+    if stats["failed"] == 0:
+        return 0
+    nofail = os.environ.get("WARM_CIJOB_NOFAIL", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    if nofail:
+        print(
+            "WARNING: WARM_CIJOB_NOFAIL set — exiting 0 despite failures "
+            "(run warm from a residential/self-hosted runner for reliable NBA API).",
+            file=sys.stderr,
+        )
+        return 0
+    return 2
 
 
 if __name__ == "__main__":

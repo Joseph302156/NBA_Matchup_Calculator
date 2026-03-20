@@ -37,10 +37,10 @@ For **fast first load** on `/results`, you can store each date’s full pipeline
    ```
 5. **App behavior:** If `DATABASE_URL` is set and a row exists for the requested date, `/results` and `/api/chat` **read from DB**. Otherwise they use the **live** pipeline (same as before). Optional `PREDICTIONS_DB_MAX_AGE_SECONDS` forces a live refresh when the row is too old.
 6. **Cron every 30–60 min:**
-   - **GitHub Actions** (recommended for long runs): scheduled workflow that runs `python scripts/warm_predictions_cache.py` with `DATABASE_URL` in repo secrets.
+   - **GitHub Actions:** same script + `DATABASE_URL` secret. **stats.nba.com often stalls or blocks GitHub-hosted runner IPs** — treat GHA as best-effort; for a reliably warm cache use **local cron** or a **self-hosted** runner with the same `DATABASE_URL`. Workflow sets `WARM_CIJOB_NOFAIL=1` so a full NBA timeout doesn’t fail the job (check logs for `Failed:`).
    - **HTTP trigger:** `POST /internal/refresh-predictions-cache` with header `Authorization: Bearer <CRON_SECRET>` and env `CRON_SECRET` set. The handler **queues** work in a background task and returns immediately. On **Render free tier**, the instance may sleep right after the response and **kill** the background warm — prefer the **script** on a scheduler, or a **paid** always-on instance, for reliable warms.
 
-Env vars: see `.env.example` (`DATABASE_URL`, `CRON_SECRET`, `WARM_CACHE_DAYS_AHEAD`, `PREDICTIONS_DB_MAX_AGE_SECONDS`, `WARM_CACHE_PAUSE_SECONDS`).
+Env vars: see `.env.example` (`DATABASE_URL`, `CRON_SECRET`, `WARM_CACHE_DAYS_AHEAD`, `PREDICTIONS_DB_MAX_AGE_SECONDS`, `WARM_CACHE_PAUSE_SECONDS`, `WARM_DATE_MAX_ATTEMPTS`, `WARM_CIJOB_NOFAIL`).
 
 **Warm script failing (NBA timeout / Supabase “failed to resolve host”):**  
 - Run gentler: `WARM_CACHE_PAUSE_SECONDS=8 PIPELINE_PARALLEL_WORKERS=1 python scripts/warm_predictions_cache.py`  

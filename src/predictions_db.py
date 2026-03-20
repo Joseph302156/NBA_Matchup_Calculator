@@ -173,6 +173,22 @@ def upsert_predictions(game_date_str: str, payload: dict[str, Any]) -> None:
             raise
 
 
+def _nba_transient_error(msg: str) -> bool:
+    m = msg.lower()
+    return any(
+        s in m
+        for s in (
+            "timeout",
+            "timed out",
+            "read timed out",
+            "connection",
+            "disconnected",
+            "remote end closed",
+            "temporarily",
+        )
+    )
+
+
 def warm_date_range(
     start: date,
     end: date,
@@ -182,6 +198,7 @@ def warm_date_range(
     """
     For each date in [start, end] inclusive, run build_predictions_for_date and upsert.
     Lazy-imports web pipeline to avoid heavy import when DB unused.
+    Retries each date up to 3× on transient NBA/network errors.
     """
     from src.web_pipeline import build_predictions_for_date
 
@@ -192,17 +209,34 @@ def warm_date_range(
     d = start
     one_day = timedelta(days=1)
     pause = _warm_pause_seconds()
+    max_attempts = max(1, int(os.environ.get("WARM_DATE_MAX_ATTEMPTS", "3")))
     while d <= end:
         ds = d.isoformat()
-        try:
-            data = build_predictions_for_date(ds)
-            upsert_predictions(ds, data)
-            stats["ok"] += 1
-        except Exception as e:  # pragma: no cover
+        last_err: Optional[Exception] = None
+        ok = False
+        for attempt in range(max_attempts):
+            try:
+                data = build_predictions_for_date(ds)
+                upsert_predictions(ds, data)
+                stats["ok"] += 1
+                ok = True
+                break
+            except Exception as e:  # pragma: no cover
+                last_err = e
+                if (
+                    attempt < max_attempts - 1
+                    and _nba_transient_error(str(e))
+                ):
+                    time.sleep(30.0 * (attempt + 1))
+                    continue
+                break
+        if not ok:
             stats["failed"] += 1
-            stats["errors"].append({"date": ds, "error": str(e)})
-            if not skip_on_pipeline_error:
-                raise
+            stats["errors"].append(
+                {"date": ds, "error": str(last_err) if last_err else "unknown"}
+            )
+            if not skip_on_pipeline_error and last_err is not None:
+                raise last_err
         d += one_day
         if d <= end and pause > 0:
             time.sleep(pause)

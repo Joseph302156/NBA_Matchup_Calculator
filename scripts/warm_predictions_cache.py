@@ -23,13 +23,21 @@ from dotenv import load_dotenv
 load_dotenv(ROOT / ".env")
 
 def main() -> int:
-    from src.predictions_db import get_database_url, is_configured, warm_date_range
+    from src.predictions_db import get_database_url, is_configured, verify_db_connection, warm_date_range
 
     if not get_database_url():
         print("ERROR: Set DATABASE_URL (or SUPABASE_DB_URL) in the environment.", file=sys.stderr)
         return 1
     if not is_configured():
         print("ERROR: Install psycopg: pip install 'psycopg[binary]'", file=sys.stderr)
+        return 1
+
+    try:
+        verify_db_connection()
+    except Exception as e:
+        print("ERROR: Cannot reach Postgres — fix DATABASE_URL / DNS before warming.", file=sys.stderr)
+        print(f"  ({e})", file=sys.stderr)
+        print("  Run: python scripts/test_database_connection.py", file=sys.stderr)
         return 1
 
     days = int(os.environ.get("WARM_CACHE_DAYS_AHEAD", "14"))

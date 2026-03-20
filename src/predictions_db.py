@@ -30,6 +30,17 @@ def is_configured() -> bool:
     return bool(get_database_url() and psycopg is not None)
 
 
+def verify_db_connection() -> None:
+    """Raise on first failed connect (fail fast before expensive NBA warm)."""
+    if not is_configured():
+        raise RuntimeError("DATABASE_URL not set or psycopg not installed")
+    url = get_database_url()
+    assert url and psycopg
+    with psycopg.connect(url, connect_timeout=20) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+
+
 def _warm_pause_seconds() -> float:
     """Sleep between dates when warming cache (easier on NBA + DNS)."""
     try:
@@ -176,6 +187,7 @@ def warm_date_range(
 
     if start > end:
         start, end = end, start
+    verify_db_connection()
     stats: dict[str, Any] = {"ok": 0, "failed": 0, "errors": []}
     d = start
     one_day = timedelta(days=1)

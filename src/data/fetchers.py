@@ -21,6 +21,10 @@ from nba_api.stats.library.parameters import PerModeDetailed, PlayerOrTeamAbbrev
 from nba_api.stats.static import teams as static_teams
 from nba_api.live.nba.endpoints import scoreboard
 
+from src.nba_client_patch import apply_nba_stats_timeout_if_needed
+
+apply_nba_stats_timeout_if_needed()
+
 from config import (
     current_season,
     UPCOMING_DAYS,

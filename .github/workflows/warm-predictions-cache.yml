@@ -11,9 +11,14 @@ on:
 jobs:
   warm:
     runs-on: ubuntu-latest
-    # Quiets Node 20 deprecation until actions default to Node 24 (see GitHub changelog).
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      # GitHub runners often hit stats.nba.com slowly; be gentle + long reads.
+      NBA_STATS_TIMEOUT_SECONDS: "120"
+      PIPELINE_PARALLEL_WORKERS: "1"
+      WARM_CACHE_PAUSE_SECONDS: "12"
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      WARM_CACHE_DAYS_AHEAD: "14"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -21,6 +26,3 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements.txt
       - run: python scripts/warm_predictions_cache.py
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          WARM_CACHE_DAYS_AHEAD: "14"

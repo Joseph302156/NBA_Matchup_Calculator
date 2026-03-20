@@ -4,9 +4,8 @@ name: Warm predictions cache
 
 on:
   workflow_dispatch: {}
-  # After DATABASE_URL is set, uncomment for automatic warms every 45 min (UTC):
-  # schedule:
-  #   - cron: "*/45 * * * *"
+    schedule:
+      - cron: "*/45 * * * *"
 
 jobs:
   warm:

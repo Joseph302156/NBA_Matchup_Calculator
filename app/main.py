@@ -4,6 +4,7 @@ Full-stack web app: pick a date → see NBA matchup predictions with rosters, st
 Run from project root: uvicorn app.main:app --reload
 """
 import json
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -30,8 +31,59 @@ from src.data.fetchers import (
 )
 from src.player_projection import PlayerBaseStats, PlayerGameContext, project_player_stats
 
+logger = logging.getLogger(__name__)
+
 # Minutes to add to projected MIN when a star teammate (≥18 PPG) is Out.
 STAR_OUT_MINUTES_BUMP = 4.0
+
+# Cached rows must match what results.html expects or we refetch live (avoids 500 on bad JSONB).
+_GAME_KEYS_F = (
+    "win_pct_away",
+    "win_pct_home",
+    "pick",
+    "pick_win_pct",
+    "away_tricode",
+    "home_tricode",
+)
+
+
+def _prediction_cache_usable(payload: object) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    if "games" not in payload or "date_display" not in payload:
+        return False
+    games = payload.get("games")
+    if not isinstance(games, list):
+        return False
+    for g in games:
+        if not isinstance(g, dict):
+            return False
+        if not all(k in g for k in _GAME_KEYS_F):
+            return False
+    return True
+
+
+def _index_form_context(request: Request, error: Optional[str] = None) -> dict:
+    today = date.today()
+    return {
+        "request": request,
+        "error": error,
+        "today": today,
+        "min_date": today - timedelta(days=30),
+        "max_date": today + timedelta(days=180),
+    }
+
+
+def _normalize_results_payload(data: dict) -> None:
+    """Mutate payload so results.html never hits missing keys (stale cache rows)."""
+    for g in data.get("games") or []:
+        if not isinstance(g, dict):
+            continue
+        g.setdefault("away_roster", [])
+        g.setdefault("home_roster", [])
+        g.setdefault("away_injuries", [])
+        g.setdefault("home_injuries", [])
+        g.setdefault("team_comparison", {})
 
 app = FastAPI(title="NBA Matchup Calculator", version="1.0")
 
@@ -51,11 +103,11 @@ def _background_warm_predictions(start: date, end: date) -> None:
 
 
 def load_predictions_for_web(date_str: str) -> dict:
-    """Use Postgres cache when present; otherwise live NBA pipeline."""
+    """Use Postgres cache when present and shape-valid; otherwise live NBA pipeline."""
     key = (date_str or "").strip()[:10]
     if predictions_db_configured():
         cached = try_get_cached(key)
-        if cached is not None:
+        if cached is not None and _prediction_cache_usable(cached):
             return cached
     return build_predictions_for_date(key)
 
@@ -63,55 +115,65 @@ def load_predictions_for_web(date_str: str) -> dict:
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Date picker: choose which day to see matchup predictions."""
-    today = date.today()
-    # Season typically Oct–Apr; allow a reasonable range
-    min_date = today - timedelta(days=30)
-    max_date = today + timedelta(days=180)
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "min_date": min_date, "max_date": max_date, "today": today},
-    )
+    return templates.TemplateResponse("index.html", _index_form_context(request))
 
 
 @app.get("/results", response_class=HTMLResponse)
 async def results_get(request: Request, date_str: str = ""):
     """Results page: show predictions for the given date (GET with ?date=YYYY-MM-DD)."""
-    today = date.today()
     if not date_str:
         return templates.TemplateResponse(
             "index.html",
-            {
-                "request": request,
-                "error": "Please select a date.",
-                "today": today,
-                "min_date": today - timedelta(days=30),
-                "max_date": today + timedelta(days=180),
-            },
+            _index_form_context(request, "Please select a date."),
         )
-    data = load_predictions_for_web(date_str)
+    try:
+        data = load_predictions_for_web(date_str)
+    except Exception:
+        logger.exception("load_predictions_for_web failed date=%r", date_str)
+        return templates.TemplateResponse(
+            "index.html",
+            _index_form_context(
+                request,
+                "Could not load predictions (NBA API timeout or server error). "
+                "Try again shortly; if this persists on Render, warm the cache from a machine that can reach stats.nba.com.",
+            ),
+        )
     data["request"] = request
-    data["chat_context"] = build_chat_context(data["date_display"], data.get("games") or []) if data.get("games") else {}
+    _normalize_results_payload(data)
+    dd = data.get("date_display") or date_str
+    data["chat_context"] = (
+        build_chat_context(dd, data.get("games") or []) if data.get("games") else {}
+    )
     return templates.TemplateResponse("results.html", data)
 
 
 @app.post("/results", response_class=HTMLResponse)
 async def results_post(request: Request, game_date: str = Form(...)):
     """Results page: form submit with selected date."""
-    today = date.today()
-    if not game_date.strip():
+    raw = (game_date or "").strip()
+    if not raw:
         return templates.TemplateResponse(
             "index.html",
-            {
-                "request": request,
-                "error": "Please select a date.",
-                "today": today,
-                "min_date": today - timedelta(days=30),
-                "max_date": today + timedelta(days=180),
-            },
+            _index_form_context(request, "Please select a date."),
         )
-    data = load_predictions_for_web(game_date.strip())
+    try:
+        data = load_predictions_for_web(raw)
+    except Exception:
+        logger.exception("load_predictions_for_web failed date=%r", raw)
+        return templates.TemplateResponse(
+            "index.html",
+            _index_form_context(
+                request,
+                "Could not load predictions (NBA API timeout or server error). "
+                "Try again shortly; if this persists on Render, warm the cache from a machine that can reach stats.nba.com.",
+            ),
+        )
     data["request"] = request
-    data["chat_context"] = build_chat_context(data["date_display"], data.get("games") or []) if data.get("games") else {}
+    _normalize_results_payload(data)
+    dd = data.get("date_display") or raw
+    data["chat_context"] = (
+        build_chat_context(dd, data.get("games") or []) if data.get("games") else {}
+    )
     return templates.TemplateResponse("results.html", data)
 
 class ChatBody(BaseModel):

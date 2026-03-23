@@ -2,6 +2,19 @@
 
 Automated pipeline that fetches upcoming NBA games and outputs win percentages and a pick per game using team strength (point differential), home/away, and recent form.
 
+## Live site
+
+**[hoopsmatchupmetrics.com](https://hoopsmatchupmetrics.com/)** — public **NBA Matchup Calculator**: pick a game date, matchup predictions, full rosters, injuries, ORtg/DRtg, win %, player cards (recent games + projections), and the AI assistant. Deployed with optional Postgres so first loads can be served from a **pre-warmed cache** (see below).
+
+### Caching and scheduled warm
+
+| Piece | What it does |
+|--------|----------------|
+| **`predictions_date_cache` (Postgres)** | One JSONB row per game date — full `build_predictions_for_date()` payload. `/results` and `/api/chat` read the DB first when `DATABASE_URL` is set. |
+| **`scripts/warm_predictions_cache.py`** | Warms today → today+N (`WARM_CACHE_DAYS_AHEAD`, default **7**). Run locally (recommended) or in CI with the **same** DB URL as production so the live site stays fast. |
+| **GitHub Actions** | [`.github/workflows/warm-predictions-cache.yml`](.github/workflows/warm-predictions-cache.yml) — hourly schedule, **Pacific 8am–4pm** window for scheduled runs; `workflow_dispatch` always runs. Uses repo secret `DATABASE_URL`. **stats.nba.com** often times out from GitHub-hosted IPs — use this as best-effort; rely on **local cron** or a **self-hosted runner** for reliable warms. |
+| **`POST /internal/refresh-predictions-cache`** | Bearer `CRON_SECRET` — queues a background warm on the app (fragile on sleeping free-tier hosts). |
+
 ## Setup
 
 ```bash
@@ -25,7 +38,7 @@ The web app loads `.env` automatically via `python-dotenv` (`load_dotenv()` in `
 
 ### Predictions cache (Postgres / Supabase) — optional
 
-For **fast first load** on `/results`, you can store each date’s full pipeline output in Postgres and refresh on a schedule.
+Same system summarized in [Caching and scheduled warm](#caching-and-scheduled-warm) above. For **fast first load** on `/results`, store each date’s full pipeline output in Postgres and refresh on a schedule.
 
 1. **Create a Supabase project** (or any Postgres). In **SQL Editor**, run `sql/predictions_date_cache.sql`.
 2. **Connection string:** Project Settings → Database → URI. Set `DATABASE_URL` in `.env` / Render (use **Session mode** pooler or direct `5432`; include `?sslmode=require` if required).

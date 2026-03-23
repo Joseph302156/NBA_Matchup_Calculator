@@ -1167,3 +1167,47 @@ body.date-popover-open .date-trigger-wrap {
   .ratings { grid-template-columns: 1fr; }
   .game-card { padding: 2rem 1.5rem; margin-left: 0; margin-right: 0; }
 }
+
+/*
+ * Home date picker: max specificity so nothing (including stale .date-form button rules)
+ * or OS button styling wins. Submit stays primary blue.
+ */
+#home-predict-form button.date-field__calendar-btn {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  background-image: none !important;
+  color: #8f8f97 !important;
+}
+
+#home-predict-form button.date-field__calendar-btn:hover {
+  color: #e4e4e7 !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+#home-predict-form button.date-strip__cell {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: #1f1f23 !important;
+  background-image: none !important;
+  color: #c8c8d0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+#home-predict-form button.date-strip__cell:hover {
+  background: #2c2c32 !important;
+  color: #fafafa !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+#home-predict-form button.date-strip__cell.date-strip__cell--selected {
+  background: #35353c !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+#home-predict-form button.date-form__submit {
+  background: var(--primary) !important;
+  color: #fff !important;
+  border: none !important;
+}

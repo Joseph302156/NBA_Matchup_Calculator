@@ -854,62 +854,65 @@ body {
   width: 100%;
 }
 
-/* Looks like the old single-line date control */
-.date-trigger {
+/* One row: read-only date + calendar icon (only icon opens popover) */
+.date-field {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
   width: 100%;
   min-height: 3.25rem;
-  padding: 0.65rem 0.9rem 0.65rem 1rem;
+  padding: 0.5rem 0.35rem 0.5rem 1rem;
   font-family: inherit;
-  font-size: 1.0625rem;
-  font-weight: 500;
-  text-align: left;
-  color: var(--text);
   background: #121214;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  cursor: pointer;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.date-trigger:hover {
-  border-color: rgba(255, 255, 255, 0.16);
-}
-
-.date-trigger:focus {
-  outline: none;
-}
-
-.date-trigger:focus-visible {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-muted);
-}
-
-.date-trigger__text {
+.date-field__value {
   flex: 1;
   min-width: 0;
+  font-size: 1.0625rem;
+  font-weight: 500;
   letter-spacing: -0.02em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
-.date-trigger__icon-wrap {
+.date-field__calendar-btn {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
-  opacity: 0.9;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
-.date-trigger:hover .date-trigger__icon-wrap {
-  color: var(--primary);
-  opacity: 1;
+.date-field__calendar-btn:hover {
+  color: #e4e4e7;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.date-trigger__icon {
+.date-field__calendar-btn:focus {
+  outline: none;
+}
+
+.date-field__calendar-btn:focus-visible {
+  color: #fafafa;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+
+.date-field__calendar-icon {
   display: block;
 }
 
@@ -933,22 +936,13 @@ body {
 }
 
 .date-popover__inner {
-  padding: 1.1rem 1.15rem 1.2rem;
-  background: linear-gradient(180deg, #141418 0%, #0e0e11 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  padding: 0.85rem 0.75rem 0.95rem;
+  background: linear-gradient(180deg, #161618 0%, #0c0c0e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.date-popover__title {
-  margin: 0 0 0.75rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
+    0 0 0 1px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 body.date-popover-open::after {
@@ -987,40 +981,41 @@ body.date-popover-open .date-trigger-wrap {
   text-transform: uppercase;
 }
 
-/* Two rows × seven columns — “half calendar” */
+/* Two weeks = 2 rows × 7 cols; numeric M/D only; no blue */
 .date-strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.5rem;
+  gap: 0.35rem;
   width: 100%;
 }
 
 .date-strip__cell {
   position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  min-height: 5.25rem;
-  padding: 0.65rem 0.35rem 0.5rem;
+  min-height: 2.85rem;
+  padding: 0.4rem 0.25rem;
   font-family: inherit;
-  color: var(--text-secondary);
-  background: #121214;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: #d4d4d8;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
   cursor: pointer;
   transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    transform 0.1s ease;
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .date-strip__cell:hover {
-  background: #1a1a1f;
-  border-color: rgba(255, 255, 255, 0.14);
-  color: var(--text);
+  background: #242428;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #fafafa;
 }
 
 .date-strip__cell:focus {
@@ -1028,77 +1023,33 @@ body.date-popover-open .date-trigger-wrap {
 }
 
 .date-strip__cell:focus-visible {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary-muted);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
 }
 
 .date-strip__cell--selected {
-  background: rgba(88, 166, 255, 0.12);
-  border-color: rgba(88, 166, 255, 0.45);
-  color: var(--text);
-}
-
-.date-strip__cell--selected .date-strip__num {
+  background: #2a2a2e;
+  border-color: rgba(255, 255, 255, 0.28);
   color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
-.date-strip__dow {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
+.date-strip__cell--today:not(.date-strip__cell--selected) {
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
-.date-strip__cell--selected .date-strip__dow {
-  color: rgba(147, 212, 255, 0.9);
-}
-
-.date-strip__num {
-  font-size: 1.375rem;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--text);
-}
-
-.date-strip__mon {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--muted);
-}
-
-.date-strip__cell--selected .date-strip__mon {
-  color: var(--text-secondary);
-}
-
-.date-strip__badge {
-  position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(147, 212, 255, 0.95);
-  background: rgba(88, 166, 255, 0.15);
-  border: 1px solid rgba(88, 166, 255, 0.25);
-  padding: 0.15rem 0.35rem;
-  border-radius: 4px;
-  line-height: 1;
+.date-strip__md {
+  line-height: 1.2;
 }
 
 @media (max-width: 640px) {
   .date-strip {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.45rem;
+    gap: 0.28rem;
   }
   .date-strip__cell {
-    min-height: 4.75rem;
-    padding: 0.5rem 0.25rem;
-  }
-  .date-strip__num {
-    font-size: 1.2rem;
+    min-height: 2.5rem;
+    font-size: 0.8125rem;
+    padding: 0.3rem 0.15rem;
   }
   .home-cta {
     max-width: 100%;

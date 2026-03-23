@@ -81,10 +81,9 @@ def _picker_day_entries() -> list[dict[str, Any]]:
         out.append(
             {
                 "iso": d.isoformat(),
-                "weekday_short": d.strftime("%a"),
-                "day_num": d.day,
-                "month_short": d.strftime("%b"),
+                "md_slash": f"{d.month}/{d.day}",
                 "is_today": d == t,
+                "aria_label": f"{d.strftime('%B')} {d.day}, {d.year}",
             }
         )
         d += timedelta(days=1)
@@ -92,10 +91,10 @@ def _picker_day_entries() -> list[dict[str, Any]]:
 
 
 def _format_selected_display(iso: str) -> str:
-    """Human label for the date trigger (e.g. Mon, Mar 23, 2026)."""
+    """Numeric field like 03/23/2026 (matches classic date input)."""
     try:
         d = date.fromisoformat((iso or "").strip()[:10])
-        return d.strftime("%a, %b %d, %Y")
+        return d.strftime("%m/%d/%Y")
     except ValueError:
         return (iso or "").strip()[:10]
 

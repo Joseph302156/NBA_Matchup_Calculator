@@ -91,6 +91,15 @@ def _picker_day_entries() -> list[dict[str, Any]]:
     return out
 
 
+def _format_selected_display(iso: str) -> str:
+    """Human label for the date trigger (e.g. Mon, Mar 23, 2026)."""
+    try:
+        d = date.fromisoformat((iso or "").strip()[:10])
+        return d.strftime("%a, %b %d, %Y")
+    except ValueError:
+        return (iso or "").strip()[:10]
+
+
 def _game_date_allowed(ds: str) -> tuple[bool, Optional[str]]:
     lo, hi = _picker_bounds()
     try:
@@ -128,6 +137,7 @@ def _index_form_context(
         "max_date": hi,
         "picker_days": _picker_day_entries(),
         "selected_date_iso": sel,
+        "selected_display": _format_selected_display(sel),
     }
 
 

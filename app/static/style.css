@@ -793,7 +793,7 @@ body {
 
 .home-cta {
   width: 100%;
-  max-width: 46rem;
+  max-width: 32rem;
   padding: 2.25rem 2rem 2.5rem;
   background: linear-gradient(180deg, rgba(30, 30, 34, 0.95) 0%, rgba(18, 18, 22, 0.98) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -818,7 +818,7 @@ body {
   line-height: 1.55;
 }
 
-/* Custom 14-day strip (no native date picker) */
+/* Compact row + popover calendar */
 .date-picker-panel {
   text-align: left;
   padding: 1.35rem 1.35rem 1.5rem;
@@ -836,16 +836,128 @@ body {
   box-shadow: none;
   display: flex;
   flex-direction: column;
-  gap: 1.35rem;
+  gap: 1rem;
   align-items: stretch;
   text-align: left;
 }
 
-.date-strip-fieldset {
-  margin: 0;
-  padding: 0;
-  border: none;
+.date-form--home__label {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: -0.25rem;
+}
+
+.date-trigger-wrap {
+  position: relative;
+  width: 100%;
+}
+
+/* Looks like the old single-line date control */
+.date-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.65rem 0.9rem 0.65rem 1rem;
+  font-family: inherit;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  text-align: left;
+  color: var(--text);
+  background: #121214;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.date-trigger:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.date-trigger:focus {
+  outline: none;
+}
+
+.date-trigger:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-muted);
+}
+
+.date-trigger__text {
+  flex: 1;
   min-width: 0;
+  letter-spacing: -0.02em;
+}
+
+.date-trigger__icon-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  opacity: 0.9;
+}
+
+.date-trigger:hover .date-trigger__icon-wrap {
+  color: var(--primary);
+  opacity: 1;
+}
+
+.date-trigger__icon {
+  display: block;
+}
+
+/* Floating dark calendar (wider than the compact field) */
+.date-popover {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.5rem);
+  transform: translateX(-50%);
+  width: min(calc(100vw - 2rem), 38rem);
+  z-index: 200;
+  filter: drop-shadow(0 16px 40px rgba(0, 0, 0, 0.55));
+}
+
+.date-popover[hidden] {
+  display: none !important;
+}
+
+.date-popover__arrow {
+  display: none;
+}
+
+.date-popover__inner {
+  padding: 1.1rem 1.15rem 1.2rem;
+  background: linear-gradient(180deg, #141418 0%, #0e0e11 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.date-popover__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+body.date-popover-open::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 150;
+  pointer-events: none;
 }
 
 .sr-only {

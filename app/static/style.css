@@ -1075,24 +1075,39 @@ body.date-popover-open .date-trigger-wrap {
   min-height: 3.25rem;
   margin-top: 0.25rem;
   padding: 0.875rem 1.5rem;
-  font-size: 1.0625rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   font-family: inherit;
-  letter-spacing: -0.01em;
-  background: var(--primary);
-  color: #fff;
-  border: none;
+  letter-spacing: 0.03em;
+  color: #f4f4f5;
+  background: linear-gradient(180deg, #3c3c44 0%, #2f2f36 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .date-form__submit:hover {
-  filter: brightness(1.08);
+  color: #fff;
+  background: linear-gradient(180deg, #484851 0%, #3a3a43 100%);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 6px 18px rgba(0, 0, 0, 0.4);
 }
 
 .date-form__submit:active {
-  transform: scale(0.99);
+  transform: scale(0.995);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.page-home .date-form__submit {
+  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
 }
 
 /* Generic date-form (fallback / other pages) */
@@ -1207,7 +1222,16 @@ body.date-popover-open .date-trigger-wrap {
 }
 
 #home-predict-form button.date-form__submit {
-  background: var(--primary) !important;
+  background: linear-gradient(180deg, #3c3c44 0%, #2f2f36 100%) !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 4px 14px rgba(0, 0, 0, 0.35) !important;
+}
+
+#home-predict-form button.date-form__submit:hover {
+  background: linear-gradient(180deg, #484851 0%, #3a3a43 100%) !important;
   color: #fff !important;
-  border: none !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
 }

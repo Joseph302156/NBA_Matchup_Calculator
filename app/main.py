@@ -89,10 +89,11 @@ def _normalize_results_payload(data: dict) -> None:
 def _results_html_or_index(request: Request, data: dict):
     """Template render can still throw (e.g. unexpected types in loops); never return raw 500."""
     try:
-        return templates.TemplateResponse("results.html", data)
+        return templates.TemplateResponse(request, "results.html", data)
     except Exception:
         logger.exception("results.html render failed")
         return templates.TemplateResponse(
+            request,
             "index.html",
             _index_form_context(
                 request,
@@ -144,7 +145,7 @@ def load_predictions_for_web(date_str: str) -> dict:
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Date picker: choose which day to see matchup predictions."""
-    return templates.TemplateResponse("index.html", _index_form_context(request))
+    return templates.TemplateResponse(request, "index.html", _index_form_context(request))
 
 
 @app.get("/results", response_class=HTMLResponse)
@@ -152,6 +153,7 @@ async def results_get(request: Request, date_str: str = ""):
     """Results page: show predictions for the given date (GET with ?date=YYYY-MM-DD)."""
     if not date_str:
         return templates.TemplateResponse(
+            request,
             "index.html",
             _index_form_context(request, "Please select a date."),
         )
@@ -160,6 +162,7 @@ async def results_get(request: Request, date_str: str = ""):
     except Exception:
         logger.exception("load_predictions_for_web failed date=%r", date_str)
         return templates.TemplateResponse(
+            request,
             "index.html",
             _index_form_context(
                 request,
@@ -182,6 +185,7 @@ async def results_post(request: Request, game_date: str = Form(...)):
     raw = (game_date or "").strip()
     if not raw:
         return templates.TemplateResponse(
+            request,
             "index.html",
             _index_form_context(request, "Please select a date."),
         )
@@ -190,6 +194,7 @@ async def results_post(request: Request, game_date: str = Form(...)):
     except Exception:
         logger.exception("load_predictions_for_web failed date=%r", raw)
         return templates.TemplateResponse(
+            request,
             "index.html",
             _index_form_context(
                 request,

@@ -4,16 +4,25 @@ Requires OPENAI_API_KEY; all natural-language understanding is handled by the mo
 """
 import json
 import os
+from datetime import date, datetime
+from decimal import Decimal
 
 
 def _json_safe(obj):
-    """Convert to JSON-serializable; replace NaN/Inf."""
+    """Convert to JSON-serializable; replace NaN/Inf; handle Decimal/datetime (e.g. from Postgres JSONB)."""
     if obj is None:
         return None
     if isinstance(obj, (str, int)):
         return obj
     if isinstance(obj, bool):
         return obj
+    if isinstance(obj, Decimal):
+        try:
+            return float(obj)
+        except (ValueError, OverflowError, TypeError):
+            return None
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
     if isinstance(obj, float):
         if obj != obj or obj == float("inf") or obj == float("-inf"):
             return None
@@ -77,10 +86,10 @@ def build_chat_context(date_display: str, games: list) -> dict:
             "pick_win_pct": _json_safe(g.get("pick_win_pct")),
             "win_pct_away": _json_safe(g.get("win_pct_away")),
             "win_pct_home": _json_safe(g.get("win_pct_home")),
-            "away_ortg": g.get("away_ortg"),
-            "away_drtg": g.get("away_drtg"),
-            "home_ortg": g.get("home_ortg"),
-            "home_drtg": g.get("home_drtg"),
+            "away_ortg": _json_safe(g.get("away_ortg")),
+            "away_drtg": _json_safe(g.get("away_drtg")),
+            "home_ortg": _json_safe(g.get("home_ortg")),
+            "home_drtg": _json_safe(g.get("home_drtg")),
             "away_injuries": [{"player_name": i.get("player_name"), "status": i.get("status")} for i in (g.get("away_injuries") or [])],
             "home_injuries": [{"player_name": i.get("player_name"), "status": i.get("status")} for i in (g.get("home_injuries") or [])],
             "away_out": [p.get("player_name") for p in away_roster if (p.get("status") or "").lower() == "out"],

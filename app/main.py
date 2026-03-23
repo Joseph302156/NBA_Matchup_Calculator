@@ -13,7 +13,7 @@ from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import BackgroundTasks, FastAPI, Request, Form, Header, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from config import RECENT_STATS_GAMES
 from src.web_pipeline import build_predictions_for_date
 from src.predictions_db import is_configured as predictions_db_configured, try_get_cached, warm_date_range
-from app.chat import build_chat_context, get_reply
+from app.chat import build_chat_context, get_reply, _json_safe
 from src.data.fetchers import (
     get_player_last_n_game_logs,
     get_league_player_stats_per_game,
@@ -85,11 +85,40 @@ def _normalize_results_payload(data: dict) -> None:
         g.setdefault("home_injuries", [])
         g.setdefault("team_comparison", {})
 
+
+def _results_html_or_index(request: Request, data: dict):
+    """Template render can still throw (e.g. unexpected types in loops); never return raw 500."""
+    try:
+        return templates.TemplateResponse("results.html", data)
+    except Exception:
+        logger.exception("results.html render failed")
+        return templates.TemplateResponse(
+            "index.html",
+            _index_form_context(
+                request,
+                "Page failed to render — often a stale or incompatible cache row for this date. "
+                "Try another date or re-run the warm script; you can delete that date in predictions_date_cache.",
+            ),
+        )
+
+
 app = FastAPI(title="NBA Matchup Calculator", version="1.0")
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE, "templates"))
-templates.env.filters["tojson"] = lambda v: json.dumps(v)
+
+
+def _tojson_filter(v: object) -> str:
+    """Embed JSON in HTML; must survive Decimal/datetime/NaN from cached DB payloads."""
+    try:
+        safe = _json_safe(v if v is not None else {})
+        return json.dumps(safe)
+    except (TypeError, ValueError):
+        logger.exception("tojson filter failed")
+        return "{}"
+
+
+templates.env.filters["tojson"] = _tojson_filter
 
 if os.path.exists(os.path.join(BASE, "static")):
     app.mount("/static", StaticFiles(directory=os.path.join(BASE, "static")), name="static")
@@ -144,7 +173,7 @@ async def results_get(request: Request, date_str: str = ""):
     data["chat_context"] = (
         build_chat_context(dd, data.get("games") or []) if data.get("games") else {}
     )
-    return templates.TemplateResponse("results.html", data)
+    return _results_html_or_index(request, data)
 
 
 @app.post("/results", response_class=HTMLResponse)
@@ -174,7 +203,7 @@ async def results_post(request: Request, game_date: str = Form(...)):
     data["chat_context"] = (
         build_chat_context(dd, data.get("games") or []) if data.get("games") else {}
     )
-    return templates.TemplateResponse("results.html", data)
+    return _results_html_or_index(request, data)
 
 class ChatBody(BaseModel):
     message: str = ""
@@ -185,19 +214,31 @@ class ChatBody(BaseModel):
 @app.post("/api/chat")
 async def api_chat(body: ChatBody):
     """Chat endpoint: answer questions about the matchup using server-side matchup data."""
-    # Use the requested date if provided; otherwise fall back to today's date string.
-    target_date = (body.game_date or date.today().strftime("%Y-%m-%d")).strip()
-    data = load_predictions_for_web(target_date)
-    ctx = build_chat_context(data.get("date_display", target_date), data.get("games") or [])
-    reply = get_reply(body.message, body.game_index, ctx)
-    return {"reply": reply}
+    try:
+        target_date = (body.game_date or date.today().strftime("%Y-%m-%d")).strip()
+        data = load_predictions_for_web(target_date)
+        ctx = build_chat_context(data.get("date_display", target_date), data.get("games") or [])
+        reply = get_reply(body.message, body.game_index, ctx)
+        return {"reply": reply}
+    except Exception:
+        logger.exception("api_chat failed")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "reply": "Could not load matchup data (NBA timeout or server error). Refresh the page or try again.",
+            },
+        )
 
 
 @app.get("/api/player-games")
 async def api_player_games(player_id: int, n: int = 5):
     """Last N game-by-game stat lines for a player (for player stats / chart)."""
-    games = get_player_last_n_game_logs(player_id, n=n)
-    return {"games": games}
+    try:
+        games = get_player_last_n_game_logs(player_id, n=n)
+        return {"games": games}
+    except Exception:
+        logger.exception("api_player_games failed player_id=%s", player_id)
+        return JSONResponse(status_code=503, content={"games": [], "error": "nba_fetch_failed"})
 
 
 # Reused for /api/player-projection so we don't refetch league stats on every click.
@@ -232,39 +273,43 @@ def _star_out_minutes_bump(team_id: int) -> float:
 @app.get("/api/player-projection")
 async def api_player_projection(player_id: int, is_home: bool = False, team_id: Optional[int] = None):
     """On-demand projection (season + recent blend, home bump). If team_id given, add minutes when a star teammate is Out."""
-    stats_map = get_league_player_stats_per_game(_player_stats_cache)
-    row = stats_map.get(player_id, {})
-    if not row:
-        return {"projections": {}}
-    season_min = float(row.get("MIN") or 0.0)
-    season_pts = float(row.get("PTS") or 0.0)
-    season_ast = float(row.get("AST") or 0.0)
-    season_reb = float(row.get("REB") or 0.0)
-    season_stl = float(row.get("STL") or 0.0)
-    season_blk = float(row.get("BLK") or 0.0)
     try:
-        logs = get_player_last_n_game_logs(player_id, n=RECENT_STATS_GAMES)
-    except Exception:
-        logs = []
-    recent_games = [
-        {"pts": g.get("pts", 0.0), "reb": g.get("reb", 0.0), "ast": g.get("ast", 0.0),
-         "stl": g.get("stl", 0.0), "blk": g.get("blk", 0.0), "min": g.get("min", 0.0)}
-        for g in logs
-    ]
-    base = PlayerBaseStats(
-        season_pts=season_pts, season_reb=season_reb, season_ast=season_ast,
-        season_stl=season_stl, season_blk=season_blk, season_min=season_min,
-        recent_games=recent_games,
-    )
-    bump = _star_out_minutes_bump(team_id) if team_id is not None else 0.0
-    ctx = PlayerGameContext(is_home=is_home, star_out_minutes_bump=bump)
-    proj = project_player_stats(base, ctx)
-    return {
-        "projections": {
-            k: {"mean": round(v["mean"], 1), "stdev": round(v["stdev"], 1)}
-            for k, v in proj.items()
+        stats_map = get_league_player_stats_per_game(_player_stats_cache)
+        row = stats_map.get(player_id, {})
+        if not row:
+            return {"projections": {}}
+        season_min = float(row.get("MIN") or 0.0)
+        season_pts = float(row.get("PTS") or 0.0)
+        season_ast = float(row.get("AST") or 0.0)
+        season_reb = float(row.get("REB") or 0.0)
+        season_stl = float(row.get("STL") or 0.0)
+        season_blk = float(row.get("BLK") or 0.0)
+        try:
+            logs = get_player_last_n_game_logs(player_id, n=RECENT_STATS_GAMES)
+        except Exception:
+            logs = []
+        recent_games = [
+            {"pts": g.get("pts", 0.0), "reb": g.get("reb", 0.0), "ast": g.get("ast", 0.0),
+             "stl": g.get("stl", 0.0), "blk": g.get("blk", 0.0), "min": g.get("min", 0.0)}
+            for g in logs
+        ]
+        base = PlayerBaseStats(
+            season_pts=season_pts, season_reb=season_reb, season_ast=season_ast,
+            season_stl=season_stl, season_blk=season_blk, season_min=season_min,
+            recent_games=recent_games,
+        )
+        bump = _star_out_minutes_bump(team_id) if team_id is not None else 0.0
+        ctx = PlayerGameContext(is_home=is_home, star_out_minutes_bump=bump)
+        proj = project_player_stats(base, ctx)
+        return {
+            "projections": {
+                k: {"mean": round(v["mean"], 1), "stdev": round(v["stdev"], 1)}
+                for k, v in proj.items()
+            }
         }
-    }
+    except Exception:
+        logger.exception("api_player_projection failed player_id=%s", player_id)
+        return JSONResponse(status_code=503, content={"projections": {}, "error": "nba_fetch_failed"})
 
 
 @app.post("/internal/refresh-predictions-cache")

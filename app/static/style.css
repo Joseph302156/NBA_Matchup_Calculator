@@ -891,15 +891,17 @@ body {
   padding: 0;
   border: none;
   border-radius: 8px;
-  background: transparent;
-  color: #9ca3af;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent !important;
+  color: #8b8b93 !important;
   cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease;
 }
 
 .date-field__calendar-btn:hover {
-  color: #e4e4e7;
-  background: rgba(255, 255, 255, 0.06);
+  color: #d4d4d8 !important;
+  background: rgba(255, 255, 255, 0.07) !important;
 }
 
 .date-field__calendar-btn:focus {
@@ -907,9 +909,9 @@ body {
 }
 
 .date-field__calendar-btn:focus-visible {
-  color: #fafafa;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+  color: #f4f4f5 !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
 }
 
 .date-field__calendar-icon {
@@ -981,12 +983,14 @@ body.date-popover-open .date-trigger-wrap {
   text-transform: uppercase;
 }
 
-/* Two weeks = 2 rows × 7 cols; numeric M/D only; no blue */
+/* Two weeks = always 7 × 2; compact cells; grayscale only (never .date-form button blue) */
 .date-strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.35rem;
+  grid-template-rows: repeat(2, auto);
+  gap: 0.22rem;
   width: 100%;
+  max-width: 100%;
 }
 
 .date-strip__cell {
@@ -994,18 +998,23 @@ body.date-popover-open .date-trigger-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.85rem;
-  padding: 0.4rem 0.25rem;
+  min-height: 0;
+  min-width: 0;
+  height: 2.15rem;
+  padding: 0.15rem 0.1rem;
   font-family: inherit;
-  font-size: 0.9375rem;
+  font-size: 0.75rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
-  color: #d4d4d8;
-  background: #1a1a1d;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
+  line-height: 1;
+  color: #c4c4cc !important;
+  background: #1f1f23 !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 6px;
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
   transition:
     background 0.12s ease,
     border-color 0.12s ease,
@@ -1013,9 +1022,9 @@ body.date-popover-open .date-trigger-wrap {
 }
 
 .date-strip__cell:hover {
-  background: #242428;
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #fafafa;
+  background: #2a2a2f !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #fafafa !important;
 }
 
 .date-strip__cell:focus {
@@ -1023,34 +1032,38 @@ body.date-popover-open .date-trigger-wrap {
 }
 
 .date-strip__cell:focus-visible {
-  border-color: rgba(255, 255, 255, 0.35);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
 .date-strip__cell--selected {
-  background: #2a2a2e;
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  background: #34343a !important;
+  border-color: rgba(255, 255, 255, 0.32) !important;
+  color: #fff !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .date-strip__cell--today:not(.date-strip__cell--selected) {
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.16) !important;
 }
 
 .date-strip__md {
   line-height: 1.2;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .date-strip__cell {
+    font-size: 0.6875rem;
+    height: 2rem;
+    padding: 0.1rem 0.05rem;
+  }
+  .date-strip {
+    gap: 0.18rem;
+  }
 }
 
 @media (max-width: 640px) {
-  .date-strip {
-    gap: 0.28rem;
-  }
-  .date-strip__cell {
-    min-height: 2.5rem;
-    font-size: 0.8125rem;
-    padding: 0.3rem 0.15rem;
-  }
   .home-cta {
     max-width: 100%;
     padding: 1.75rem 1.25rem 2rem;
@@ -1103,7 +1116,8 @@ body.date-popover-open .date-trigger-wrap {
   background: var(--bg-card);
   color: var(--text);
 }
-.date-form button {
+/* Do NOT style all .date-form buttons — home page has 14 date cells + calendar icon */
+.date-form:not(.date-form--home) button {
   padding: 0.75rem 1.5rem;
   font-size: 0.9375rem;
   background: var(--primary);
@@ -1112,7 +1126,18 @@ body.date-popover-open .date-trigger-wrap {
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
-.date-form button:hover { opacity: 0.9; }
+.date-form:not(.date-form--home) button:hover {
+  opacity: 0.9;
+}
+
+/* Generic .date-form block must not override compact home layout */
+.date-form.date-form--home {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  align-items: stretch;
+}
 
 @media (max-width: 480px) {
   .home-cta {

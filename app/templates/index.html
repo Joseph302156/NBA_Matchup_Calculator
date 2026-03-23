@@ -4,35 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NBA Matchup Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="page-home">
-  <header class="header">
+  <header class="header header--home">
     <h1>NBA Matchup Calculator</h1>
     <p class="tagline">Pick a date to see matchup predictions, rosters, and win percentages.</p>
   </header>
 
   <main class="main">
     {% if error %}
-    <p class="error">{{ error }}</p>
+    <p class="home-error" role="alert">{{ error }}</p>
     {% endif %}
 
     <section class="home-cta">
       <h2 class="home-cta__title">See who’s favored — and why</h2>
-      <p class="home-cta__desc">Choose a game date to get win probabilities, full rosters with stats, injury reports, and team ratings. All in one place.</p>
-      <form action="/results" method="post" class="date-form">
-        <label for="game_date">Game date</label>
-        <input
-          type="date"
-          id="game_date"
-          name="game_date"
-          value="{{ today.isoformat() }}"
-          min="{{ min_date.isoformat() }}"
-          max="{{ max_date.isoformat() }}"
-          required
-        />
-        <button type="submit">Calculate predictions</button>
-      </form>
+      <p class="home-cta__desc">Win probabilities, full rosters, injuries, and team ratings — for any NBA slate in the window below.</p>
+
+      <div class="date-picker-panel">
+        <p class="date-picker-panel__hint">14 days · from 2 days ago through the next stretch</p>
+        <form action="/results" method="post" class="date-form date-form--home">
+          <label for="game_date">Game date</label>
+          <input
+            type="date"
+            id="game_date"
+            name="game_date"
+            value="{{ today.isoformat() }}"
+            min="{{ min_date.isoformat() }}"
+            max="{{ max_date.isoformat() }}"
+            required
+          />
+          <button type="submit" class="date-form__submit">Calculate predictions</button>
+        </form>
+      </div>
     </section>
   </main>
 

@@ -63,14 +63,38 @@ def _prediction_cache_usable(payload: object) -> bool:
     return True
 
 
+def _picker_bounds() -> tuple[date, date]:
+    """14 consecutive days, starting 2 days before server today (inclusive)."""
+    t = date.today()
+    lo = t - timedelta(days=2)
+    hi = lo + timedelta(days=13)
+    return lo, hi
+
+
+def _game_date_allowed(ds: str) -> tuple[bool, Optional[str]]:
+    lo, hi = _picker_bounds()
+    try:
+        d = date.fromisoformat((ds or "").strip()[:10])
+    except ValueError:
+        return False, "Invalid date."
+    if d < lo or d > hi:
+        return (
+            False,
+            f"Choose a date between {lo.strftime('%b %d')} and {hi.strftime('%b %d, %Y')} "
+            "(two-week window).",
+        )
+    return True, None
+
+
 def _index_form_context(request: Request, error: Optional[str] = None) -> dict:
     today = date.today()
+    lo, hi = _picker_bounds()
     return {
         "request": request,
         "error": error,
         "today": today,
-        "min_date": today - timedelta(days=30),
-        "max_date": today + timedelta(days=180),
+        "min_date": lo,
+        "max_date": hi,
     }
 
 
@@ -157,6 +181,13 @@ async def results_get(request: Request, date_str: str = ""):
             "index.html",
             _index_form_context(request, "Please select a date."),
         )
+    ok, err_msg = _game_date_allowed(date_str)
+    if not ok:
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            _index_form_context(request, err_msg),
+        )
     try:
         data = load_predictions_for_web(date_str)
     except Exception:
@@ -188,6 +219,13 @@ async def results_post(request: Request, game_date: str = Form(...)):
             request,
             "index.html",
             _index_form_context(request, "Please select a date."),
+        )
+    ok, err_msg = _game_date_allowed(raw)
+    if not ok:
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            _index_form_context(request, err_msg),
         )
     try:
         data = load_predictions_for_web(raw)

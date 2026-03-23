@@ -68,7 +68,7 @@ Pick a date and view matchup predictions with rosters, statlines, injury report,
 uvicorn app.main:app --reload
 ```
 
-Then open http://127.0.0.1:8000 — choose a date and click **Calculate predictions**. Results show each game: away @ home, win % bar, pick, team ORtg/DRtg, full roster with MIN/PTS/AST/REB/STL/BLK and Playing/Out/Questionable status, and injury report.
+Then open http://127.0.0.1:8000 — choose a date (UI allows **14 days** starting **2 days before today**) and click **Calculate predictions**. Results show each game: away @ home, win % bar, pick, team ORtg/DRtg, full roster with MIN/PTS/AST/REB/STL/BLK and Playing/Out/Questionable status, and injury report.
 
 **Player card:** Click a player name to open a profile with headshot, season averages, **projected stats** for the upcoming game (blend of season + last 5 games, home-court bump, and extra minutes when a star teammate is out), and a bar chart of their last 5 games (switchable by stat: PTS, AST, REB, STL, BLK, MIN). Projections are computed **on demand** when you open the card (not at page load) to keep date selection fast.
 

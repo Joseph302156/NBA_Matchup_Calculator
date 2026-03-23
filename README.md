@@ -12,7 +12,7 @@ Automated pipeline that fetches upcoming NBA games and outputs win percentages a
 |--------|----------------|
 | **`predictions_date_cache` (Postgres)** | One JSONB row per game date — full `build_predictions_for_date()` payload. `/results` and `/api/chat` read the DB first when `DATABASE_URL` is set. |
 | **`scripts/warm_predictions_cache.py`** | Warms today → today+N (`WARM_CACHE_DAYS_AHEAD`, default **7**). Run locally (recommended) or in CI with the **same** DB URL as production so the live site stays fast. |
-| **GitHub Actions** | [`.github/workflows/warm-predictions-cache.yml`](.github/workflows/warm-predictions-cache.yml) — hourly schedule, **Pacific 8am–4pm** window for scheduled runs; `workflow_dispatch` always runs. Uses repo secret `DATABASE_URL`. **stats.nba.com** often times out from GitHub-hosted IPs — use this as best-effort; rely on **local cron** or a **self-hosted runner** for reliable warms. |
+| **GitHub Actions** | [`.github/workflows/warm-predictions-cache.yml`](.github/workflows/warm-predictions-cache.yml) — hourly UTC queue, **America/Los_Angeles 10am–5pm** (hours 10–17) for the actual warm; `workflow_dispatch` always runs. Uses repo secret `DATABASE_URL`. **stats.nba.com** often times out from GitHub-hosted IPs — use this as best-effort; rely on **local cron** or a **self-hosted runner** for reliable warms. |
 | **`POST /internal/refresh-predictions-cache`** | Bearer `CRON_SECRET` — queues a background warm on the app (fragile on sleeping free-tier hosts). |
 
 ## Setup

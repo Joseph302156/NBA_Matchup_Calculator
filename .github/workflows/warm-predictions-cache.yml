@@ -1,13 +1,17 @@
-# python3 scripts/warm_predictions_cache.py 
+# python3 scripts/warm_predictions_cache.py
 # stats.nba.com often times out from GitHub-hosted IPs; reliable warm = local cron or self-hosted runner.
 # WARM_CIJOB_NOFAIL keeps the cron green when NBA blocks the runner (cache may stay stale).
+#
+# Schedule: workflow queues every hour UTC; the script runs only when America/Los_Angeles clock
+# is 10:00–17:59 (10am–5pm Pacific, DST-aware). GitHub may delay the start by a few minutes.
+# ~1s runs = skipped (outside window). Long runs = real warm + NBA read timeouts/retries.
 
 name: Warm predictions cache
 
 on:
   workflow_dispatch:
   schedule:
-    # Every hour UTC; the step below only warms during 08:00–16:00 America/Los_Angeles (PT).
+    # Every hour UTC; warm step only when LA local hour is 10–17 (10am–5pm inclusive).
     - cron: "0 * * * *"
 
 jobs:
@@ -30,16 +34,16 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Warm predictions cache
         run: |
-          # Manual "Run workflow" always runs. Scheduled runs only 8am–4pm Pacific.
+          # Manual "Run workflow" always runs. Scheduled runs only 10am–5pm America/Los_Angeles.
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "workflow_dispatch → run warm (no time window)"
             python scripts/warm_predictions_cache.py
             exit $?
           fi
           H=$(python -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('America/Los_Angeles')).hour)")
-          if [ "$H" -lt 8 ] || [ "$H" -gt 16 ]; then
-            echo "Skip scheduled warm: America/Los_Angeles hour=$H (window 08–16 inclusive, PT)"
+          if [ "$H" -lt 10 ] || [ "$H" -gt 17 ]; then
+            echo "Skip scheduled warm: America/Los_Angeles hour=$H (window 10–17 inclusive = 10:00–17:59 PT)"
             exit 0
           fi
-          echo "America/Los_Angeles hour=$H → running warm"
+          echo "America/Los_Angeles hour=$H → running warm (10am–5pm PT window)"
           python scripts/warm_predictions_cache.py

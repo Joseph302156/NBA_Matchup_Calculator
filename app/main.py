@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()  # load .env from project root so OPENAI_API_KEY is available
 from datetime import date, timedelta
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import BackgroundTasks, FastAPI, Request, Form, Header, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -71,6 +71,26 @@ def _picker_bounds() -> tuple[date, date]:
     return lo, hi
 
 
+def _picker_day_entries() -> list[dict[str, Any]]:
+    """14 rows for the home date strip (same bounds as min/max)."""
+    lo, hi = _picker_bounds()
+    out: list[dict[str, Any]] = []
+    d = lo
+    t = date.today()
+    while d <= hi:
+        out.append(
+            {
+                "iso": d.isoformat(),
+                "weekday_short": d.strftime("%a"),
+                "day_num": d.day,
+                "month_short": d.strftime("%b"),
+                "is_today": d == t,
+            }
+        )
+        d += timedelta(days=1)
+    return out
+
+
 def _game_date_allowed(ds: str) -> tuple[bool, Optional[str]]:
     lo, hi = _picker_bounds()
     try:
@@ -86,15 +106,28 @@ def _game_date_allowed(ds: str) -> tuple[bool, Optional[str]]:
     return True, None
 
 
-def _index_form_context(request: Request, error: Optional[str] = None) -> dict:
+def _index_form_context(
+    request: Request,
+    error: Optional[str] = None,
+    selected_iso: Optional[str] = None,
+) -> dict:
     today = date.today()
     lo, hi = _picker_bounds()
+    sel = (selected_iso or "").strip()[:10] or today.isoformat()
+    try:
+        sd = date.fromisoformat(sel)
+        if sd < lo or sd > hi:
+            sel = today.isoformat()
+    except ValueError:
+        sel = today.isoformat()
     return {
         "request": request,
         "error": error,
         "today": today,
         "min_date": lo,
         "max_date": hi,
+        "picker_days": _picker_day_entries(),
+        "selected_date_iso": sel,
     }
 
 
@@ -186,7 +219,7 @@ async def results_get(request: Request, date_str: str = ""):
         return templates.TemplateResponse(
             request,
             "index.html",
-            _index_form_context(request, err_msg),
+            _index_form_context(request, err_msg, selected_iso=date_str.strip()[:10]),
         )
     try:
         data = load_predictions_for_web(date_str)
@@ -225,7 +258,7 @@ async def results_post(request: Request, game_date: str = Form(...)):
         return templates.TemplateResponse(
             request,
             "index.html",
-            _index_form_context(request, err_msg),
+            _index_form_context(request, err_msg, selected_iso=raw[:10]),
         )
     try:
         data = load_predictions_for_web(raw)

@@ -22,21 +22,35 @@
 
     <section class="home-cta">
       <h2 class="home-cta__title">See who’s favored — and why</h2>
-      <p class="home-cta__desc">Win probabilities, full rosters, injuries, and team ratings — for any NBA slate in the window below.</p>
+      <p class="home-cta__desc">Win probabilities, full rosters, injuries, and team ratings — tap a date below, then run the calculator.</p>
 
       <div class="date-picker-panel">
-        <p class="date-picker-panel__hint">14 days · from 2 days ago through the next stretch</p>
-        <form action="/results" method="post" class="date-form date-form--home">
-          <label for="game_date">Game date</label>
-          <input
-            type="date"
-            id="game_date"
-            name="game_date"
-            value="{{ today.isoformat() }}"
-            min="{{ min_date.isoformat() }}"
-            max="{{ max_date.isoformat() }}"
-            required
-          />
+        <form action="/results" method="post" class="date-form date-form--home" id="home-predict-form">
+          <fieldset class="date-strip-fieldset">
+            <legend class="date-strip-legend sr-only">Choose game date</legend>
+            <div
+              id="date-strip"
+              class="date-strip"
+              role="group"
+              aria-label="Available game dates"
+              data-default-selected="{{ selected_date_iso }}"
+            >
+              {% for day in picker_days %}
+              <button
+                type="button"
+                class="date-strip__cell{% if day.iso == selected_date_iso %} date-strip__cell--selected{% endif %}"
+                data-date="{{ day.iso }}"
+                aria-pressed="{% if day.iso == selected_date_iso %}true{% else %}false{% endif %}"
+              >
+                <span class="date-strip__dow">{{ day.weekday_short }}</span>
+                <span class="date-strip__num">{{ day.day_num }}</span>
+                <span class="date-strip__mon">{{ day.month_short }}</span>
+                {% if day.is_today %}<span class="date-strip__badge">Today</span>{% endif %}
+              </button>
+              {% endfor %}
+            </div>
+          </fieldset>
+          <input type="hidden" name="game_date" id="game_date" value="{{ selected_date_iso }}" required />
           <button type="submit" class="date-form__submit">Calculate predictions</button>
         </form>
       </div>
@@ -46,5 +60,6 @@
   <footer class="footer">
     <p>Data from NBA.com via nba_api. Predictions are for entertainment only.</p>
   </footer>
+  <script src="/static/home-picker.js" defer></script>
 </body>
 </html>

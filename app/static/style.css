@@ -955,9 +955,14 @@ body.date-popover-open::after {
   content: "";
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.4);
   z-index: 150;
   pointer-events: none;
+}
+
+body.date-popover-open .date-trigger-wrap {
+  position: relative;
+  z-index: 200;
 }
 
 .sr-only {

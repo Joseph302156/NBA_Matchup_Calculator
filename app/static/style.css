@@ -25,6 +25,15 @@
   --radius-sm: 6px;
   --radius-lg: 10px;
   --radius-pill: 999px;
+  /* Grayscale “bubble” buttons (home + results) */
+  --bubble-gradient: linear-gradient(180deg, #3c3c44 0%, #2f2f36 100%);
+  --bubble-gradient-hover: linear-gradient(180deg, #484851 0%, #3a3a43 100%);
+  --bubble-gradient-soft: linear-gradient(180deg, #34343c 0%, #2a2a31 100%);
+  --bubble-border: rgba(255, 255, 255, 0.12);
+  --bubble-border-strong: rgba(255, 255, 255, 0.18);
+  --bubble-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --bubble-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --bubble-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
 
 * { box-sizing: border-box; }
@@ -202,34 +211,62 @@ body {
 }
 
 .chat-panel__input::placeholder { color: var(--muted); }
-.chat-panel__input:focus { outline: none; border-color: var(--primary); }
-
-.chat-panel__send {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-family: inherit;
-  font-weight: 500;
-  color: #fff;
-  background: var(--primary);
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
+.chat-panel__input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06);
 }
 
-.chat-panel__send:hover { opacity: 0.9; }
+.chat-panel__send {
+  padding: 0.55rem 1.15rem;
+  font-size: 0.8125rem;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #f4f4f5;
+  background: var(--bubble-gradient);
+  border: 1px solid var(--bubble-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  box-shadow: var(--bubble-highlight), var(--bubble-shadow);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+
+.chat-panel__send:hover {
+  color: #fff;
+  background: var(--bubble-gradient-hover);
+  border-color: var(--bubble-border-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), var(--bubble-shadow-hover);
+}
+
+.chat-panel__send:active {
+  transform: scale(0.98);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
 
 /* Clickable player name in roster */
 .player-name-btn {
   background: none;
   border: none;
-  padding: 0;
+  padding: 0.15rem 0.35rem;
+  margin: -0.15rem -0.35rem;
   font: inherit;
-  color: var(--primary);
+  font-weight: 600;
+  color: #c4c4cc;
   cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration: none;
+  border-radius: var(--radius-pill);
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
-.player-name-btn:hover { color: var(--primary-hover, #7c9eff); }
+.player-name-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.player-name-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
 
 /* Player stats card — PrizePicks-style layout */
 .player-card {
@@ -242,18 +279,30 @@ body {
 }
 .player-card__back {
   margin-bottom: 1.25rem;
-  padding: 0.5rem 0.9rem;
-  font-size: 0.9375rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  font-family: inherit;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  font-family: "DM Sans", system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  color: #e4e4e7;
+  background: var(--bubble-gradient-soft);
+  border: 1px solid var(--bubble-border);
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.15s;
+  box-shadow: var(--bubble-highlight), 0 2px 10px rgba(0, 0, 0, 0.25);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease,
+    box-shadow 0.15s ease, transform 0.15s ease;
 }
-.player-card__back:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-muted); transform: translateX(-2px); }
+.player-card__back:hover {
+  color: #fff;
+  background: var(--bubble-gradient-hover);
+  border-color: var(--bubble-border-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), var(--bubble-shadow);
+  transform: translateX(-2px);
+}
+.player-card__back:active {
+  transform: translateX(-1px) scale(0.99);
+}
 .player-card__header {
   display: flex;
   flex-wrap: wrap;
@@ -328,22 +377,29 @@ body {
   margin-bottom: 1rem;
 }
 .player-card__stat-tab {
-  padding: 0.45rem 0.85rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  font-family: inherit;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.95rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: "DM Sans", system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  color: #a1a1aa;
+  background: var(--bubble-gradient-soft);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
-.player-card__stat-tab:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); }
+.player-card__stat-tab:hover {
+  color: #f4f4f5;
+  background: linear-gradient(180deg, #3a3a42 0%, #2e2e34 100%);
+  border-color: rgba(255, 255, 255, 0.12);
+}
 .player-card__stat-tab.active {
-  color: #4ade80;
-  border-color: rgba(74, 222, 128, 0.5);
-  background: rgba(74, 222, 128, 0.12);
+  color: #fff;
+  background: var(--bubble-gradient-hover);
+  border-color: var(--bubble-border-strong);
+  box-shadow: var(--bubble-highlight), var(--bubble-shadow);
 }
 .player-card__chart {
   display: block;
@@ -481,25 +537,30 @@ body {
   flex-shrink: 0;
 }
 .matchup-btn {
-  padding: 0.5rem 0.875rem;
-  font-size: 0.875rem;
-  font-family: inherit;
-  color: var(--text-secondary);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  padding: 0.55rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: "DM Sans", system-ui, sans-serif;
+  letter-spacing: 0.03em;
+  color: #c4c4cc;
+  background: var(--bubble-gradient-soft);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 .matchup-btn:hover {
-  color: var(--text);
-  background: var(--bg-card);
-  border-color: var(--border-light);
+  color: #f4f4f5;
+  background: linear-gradient(180deg, #3a3a42 0%, #2e2e34 100%);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 12px rgba(0, 0, 0, 0.28);
 }
 .matchup-btn[aria-pressed="true"] {
-  color: var(--text);
-  background: var(--primary-muted);
-  border-color: var(--primary);
+  color: #fff;
+  background: var(--bubble-gradient-hover);
+  border-color: var(--bubble-border-strong);
+  box-shadow: var(--bubble-highlight), var(--bubble-shadow);
 }
 
 .games { display: flex; flex-direction: column; gap: 1.75rem; }
@@ -1080,23 +1141,21 @@ body.date-popover-open .date-trigger-wrap {
   font-family: inherit;
   letter-spacing: 0.03em;
   color: #f4f4f5;
-  background: linear-gradient(180deg, #3c3c44 0%, #2f2f36 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  background: var(--bubble-gradient);
+  border: 1px solid var(--bubble-border);
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--bubble-highlight), var(--bubble-shadow);
   transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .date-form__submit:hover {
   color: #fff;
-  background: linear-gradient(180deg, #484851 0%, #3a3a43 100%);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--bubble-gradient-hover);
+  border-color: var(--bubble-border-strong);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.09),
-    0 6px 18px rgba(0, 0, 0, 0.4);
+    var(--bubble-shadow-hover);
 }
 
 .date-form__submit:active {
@@ -1222,16 +1281,16 @@ body.date-popover-open .date-trigger-wrap {
 }
 
 #home-predict-form button.date-form__submit {
-  background: linear-gradient(180deg, #3c3c44 0%, #2f2f36 100%) !important;
+  background: var(--bubble-gradient) !important;
   color: #f4f4f5 !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid var(--bubble-border) !important;
+  border-radius: var(--radius-pill) !important;
+  box-shadow: var(--bubble-highlight), var(--bubble-shadow) !important;
 }
 
 #home-predict-form button.date-form__submit:hover {
-  background: linear-gradient(180deg, #484851 0%, #3a3a43 100%) !important;
+  background: var(--bubble-gradient-hover) !important;
   color: #fff !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: var(--bubble-border-strong) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), var(--bubble-shadow-hover) !important;
 }
